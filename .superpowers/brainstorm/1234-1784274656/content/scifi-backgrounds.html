@@ -1,0 +1,67 @@
+<h2>科幻關:背景選擇</h2>
+<p class="subtitle">W 是 Warped City 原生背景(和地形磚同一套,最協調);1–8 號是 CraftPix 夜景系列(灰紫夢幻感,需另外署名)。每張都是多層疊好的效果,遊戲裡各層會以不同速度移動產生景深。也可以混搭,例如「遠景用 3 號、近景用 W 的霓虹樓」。</p>
+
+<style>
+  .bgstack{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;image-rendering:pixelated;background:#000}
+  .bgstack img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+  .wcstack{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#2b2138}
+  .wcl{position:absolute;left:0;top:0;right:0;bottom:0;background-repeat:repeat-x;image-rendering:pixelated}
+</style>
+
+<div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(380px,1fr));max-width:1100px">
+
+  <div class="card" data-choice="wc-native" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="wcstack">
+        <div class="wcl" style="background-image:url('/files/wc-skyline-a.png');background-size:auto 100%"></div>
+        <div class="wcl" style="background-image:url('/files/wc-buildings.png');background-size:auto 78%;background-position:bottom"></div>
+        <div class="wcl" style="background-image:url('/files/wc-near.png');background-size:auto 62%;background-position:bottom"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>W. Warped City 原生三層背景(推薦)</h3>
+      <p>紫色天際線 + 遠樓 + 近距離霓虹建築。跟平台磚、無人機同一個作者同一包,色調完全一致,CC0 免署名。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="cp-1" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp1-1.png"><img src="/files/cp1-2.png"><img src="/files/cp1-3.png"><img src="/files/cp1-4.png"><img src="/files/cp1-5.png"></div></div>
+    <div class="card-body"><h3>1 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-2" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp2-1.png"><img src="/files/cp2-2.png"><img src="/files/cp2-3.png"><img src="/files/cp2-4.png"><img src="/files/cp2-5.png"></div></div>
+    <div class="card-body"><h3>2 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-3" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp3-1.png"><img src="/files/cp3-2.png"><img src="/files/cp3-3.png"><img src="/files/cp3-4.png"><img src="/files/cp3-5.png"></div></div>
+    <div class="card-body"><h3>3 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-4" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp4-1.png"><img src="/files/cp4-2.png"><img src="/files/cp4-3.png"><img src="/files/cp4-4.png"><img src="/files/cp4-5.png"></div></div>
+    <div class="card-body"><h3>4 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-5" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp5-1.png"><img src="/files/cp5-2.png"><img src="/files/cp5-3.png"><img src="/files/cp5-4.png"><img src="/files/cp5-5.png"></div></div>
+    <div class="card-body"><h3>5 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-6" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp6-1.png"><img src="/files/cp6-2.png"><img src="/files/cp6-3.png"><img src="/files/cp6-4.png"><img src="/files/cp6-5.png"></div></div>
+    <div class="card-body"><h3>6 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-7" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp7-1.png"><img src="/files/cp7-2.png"><img src="/files/cp7-3.png"><img src="/files/cp7-4.png"><img src="/files/cp7-5.png"></div></div>
+    <div class="card-body"><h3>7 號夜景</h3></div>
+  </div>
+
+  <div class="card" data-choice="cp-8" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="bgstack"><img src="/files/cp8-1.png"><img src="/files/cp8-2.png"><img src="/files/cp8-3.png"><img src="/files/cp8-4.png"><img src="/files/cp8-5.png"></div></div>
+    <div class="card-body"><h3>8 號夜景</h3></div>
+  </div>
+
+</div>

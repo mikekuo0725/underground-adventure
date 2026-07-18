@@ -1,0 +1,237 @@
+<h2>美術方向:擬真程度</h2>
+<p class="subtitle">同一個幽暗雨林場景,三種畫法。實際遊戲會動(螢火蟲飄、薄霧流動、藤蔓搖晃),質感會比靜態圖再好一截。</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="fine-pixel" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f0b;display:flex;justify-content:center;padding:12px 0">
+      <svg width="220" height="293" viewBox="0 0 180 240" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="180" height="240" fill="#101c14"/>
+        <!-- 背景兩層剪影 -->
+        <rect x="24" y="26" width="34" height="12" fill="#16241a"/><rect x="30" y="22" width="18" height="4" fill="#16241a"/>
+        <rect x="92" y="58" width="42" height="12" fill="#16241a"/><rect x="100" y="54" width="22" height="4" fill="#16241a"/>
+        <rect x="44" y="150" width="36" height="10" fill="#16241a"/><rect x="118" y="200" width="38" height="10" fill="#16241a"/>
+        <rect x="60" y="104" width="26" height="8" fill="#131f16"/><rect x="128" y="122" width="30" height="8" fill="#131f16"/>
+        <!-- 月光柱(用點陣抖動做邊緣) -->
+        <rect x="54" y="0" width="18" height="240" fill="#7ad0c0" opacity="0.07"/>
+        <rect x="52" y="0" width="2" height="240" fill="#7ad0c0" opacity="0.04"/><rect x="72" y="0" width="2" height="240" fill="#7ad0c0" opacity="0.04"/>
+        <!-- 牆(帶石紋層次) -->
+        <rect x="0" y="0" width="14" height="240" fill="#22402c"/>
+        <rect x="166" y="0" width="14" height="240" fill="#22402c"/>
+        <rect x="10" y="0" width="4" height="240" fill="#1a3222"/><rect x="166" y="0" width="4" height="240" fill="#2a4c35"/>
+        <rect x="2" y="20" width="8" height="2" fill="#2c5038"/><rect x="4" y="64" width="8" height="2" fill="#2c5038"/><rect x="2" y="132" width="8" height="2" fill="#2c5038"/><rect x="4" y="196" width="8" height="2" fill="#2c5038"/>
+        <rect x="168" y="44" width="8" height="2" fill="#2c5038"/><rect x="170" y="108" width="8" height="2" fill="#2c5038"/><rect x="168" y="170" width="8" height="2" fill="#2c5038"/>
+        <rect x="0" y="40" width="14" height="2" fill="#0d1810"/><rect x="0" y="110" width="14" height="2" fill="#0d1810"/><rect x="0" y="180" width="14" height="2" fill="#0d1810"/>
+        <rect x="166" y="70" width="14" height="2" fill="#0d1810"/><rect x="166" y="140" width="14" height="2" fill="#0d1810"/><rect x="166" y="205" width="14" height="2" fill="#0d1810"/>
+        <!-- 牆上葉叢(兩色層次) -->
+        <rect x="8" y="50" width="12" height="9" fill="#2e5c3a"/><rect x="10" y="48" width="8" height="4" fill="#3f7a4c"/><rect x="12" y="56" width="6" height="3" fill="#234630"/>
+        <rect x="6" y="124" width="14" height="9" fill="#2e5c3a"/><rect x="8" y="122" width="9" height="4" fill="#3f7a4c"/>
+        <rect x="158" y="92" width="16" height="9" fill="#2e5c3a"/><rect x="162" y="90" width="9" height="4" fill="#3f7a4c"/><rect x="160" y="99" width="7" height="3" fill="#234630"/>
+        <rect x="162" y="184" width="12" height="8" fill="#2e5c3a"/><rect x="164" y="182" width="8" height="3" fill="#3f7a4c"/>
+        <!-- 垂藤(節點+葉簇+花) -->
+        <rect x="40" y="0" width="3" height="48" fill="#35633f"/><rect x="39" y="10" width="5" height="2" fill="#2a5033"/><rect x="39" y="28" width="5" height="2" fill="#2a5033"/>
+        <rect x="36" y="16" width="6" height="4" fill="#4a8a58"/><rect x="34" y="18" width="3" height="3" fill="#3a6e46"/>
+        <rect x="42" y="34" width="6" height="4" fill="#4a8a58"/><rect x="46" y="36" width="3" height="3" fill="#3a6e46"/>
+        <rect x="37" y="46" width="9" height="5" fill="#4a8a58"/><rect x="39" y="51" width="5" height="3" fill="#3a6e46"/>
+        <rect x="39" y="54" width="4" height="3" fill="#d86a9a"/><rect x="40" y="53" width="2" height="2" fill="#f0a0c0"/>
+        <rect x="86" y="0" width="3" height="68" fill="#35633f"/><rect x="85" y="20" width="5" height="2" fill="#2a5033"/><rect x="85" y="44" width="5" height="2" fill="#2a5033"/>
+        <rect x="82" y="26" width="6" height="4" fill="#4a8a58"/><rect x="88" y="48" width="6" height="4" fill="#4a8a58"/>
+        <rect x="83" y="66" width="9" height="5" fill="#4a8a58"/><rect x="85" y="71" width="5" height="3" fill="#3a6e46"/>
+        <rect x="85" y="74" width="4" height="3" fill="#e8b04a"/>
+        <rect x="128" y="0" width="3" height="32" fill="#35633f"/><rect x="124" y="14" width="6" height="4" fill="#4a8a58"/><rect x="125" y="30" width="9" height="5" fill="#4a8a58"/><rect x="127" y="35" width="5" height="3" fill="#3a6e46"/>
+        <!-- 平台(木紋+青苔頂+垂苔) -->
+        <rect x="30" y="80" width="70" height="12" fill="#5c3a24"/>
+        <rect x="30" y="80" width="70" height="4" fill="#3f8752"/><rect x="32" y="79" width="20" height="2" fill="#57a868"/><rect x="66" y="79" width="14" height="2" fill="#57a868"/>
+        <rect x="30" y="90" width="70" height="2" fill="#3d2415"/>
+        <rect x="38" y="86" width="10" height="2" fill="#6e4a2c"/><rect x="58" y="85" width="12" height="2" fill="#6e4a2c"/><rect x="82" y="86" width="10" height="2" fill="#6e4a2c"/>
+        <rect x="34" y="92" width="3" height="6" fill="#3f8752"/><rect x="35" y="98" width="2" height="2" fill="#2d6640"/><rect x="76" y="92" width="3" height="5" fill="#3f8752"/><rect x="52" y="92" width="3" height="7" fill="#3f8752"/><rect x="53" y="99" width="2" height="2" fill="#2d6640"/>
+        <rect x="88" y="74" width="7" height="4" fill="#c96a4a"/><rect x="89" y="73" width="5" height="2" fill="#e08a5c"/><rect x="90" y="78" width="3" height="3" fill="#d8c9a8"/>
+        <rect x="35" y="76" width="2" height="4" fill="#4a9a5c"/><rect x="39" y="77" width="2" height="3" fill="#4a9a5c"/><rect x="37" y="75" width="2" height="2" fill="#67c078"/>
+        <rect x="95" y="140" width="60" height="12" fill="#5c3a24"/>
+        <rect x="95" y="140" width="60" height="4" fill="#3f8752"/><rect x="98" y="139" width="16" height="2" fill="#57a868"/><rect x="130" y="139" width="12" height="2" fill="#57a868"/>
+        <rect x="95" y="150" width="60" height="2" fill="#3d2415"/>
+        <rect x="102" y="146" width="10" height="2" fill="#6e4a2c"/><rect x="126" y="145" width="12" height="2" fill="#6e4a2c"/>
+        <rect x="120" y="152" width="3" height="6" fill="#3f8752"/><rect x="144" y="152" width="3" height="4" fill="#3f8752"/>
+        <rect x="138" y="134" width="7" height="4" fill="#8a5ac9"/><rect x="139" y="133" width="5" height="2" fill="#a87ae0"/><rect x="140" y="138" width="3" height="3" fill="#d8c9a8"/>
+        <rect x="40" y="200" width="66" height="12" fill="#5c3a24"/>
+        <rect x="40" y="200" width="66" height="4" fill="#3f8752"/><rect x="44" y="199" width="18" height="2" fill="#57a868"/>
+        <rect x="40" y="210" width="66" height="2" fill="#3d2415"/>
+        <rect x="48" y="206" width="12" height="2" fill="#6e4a2c"/><rect x="76" y="205" width="10" height="2" fill="#6e4a2c"/>
+        <rect x="60" y="212" width="3" height="5" fill="#3f8752"/><rect x="90" y="212" width="3" height="6" fill="#3f8752"/>
+        <!-- 螢火蟲(小光暈) -->
+        <rect x="58" y="113" width="7" height="7" fill="#e8ff8a" opacity="0.16"/><rect x="60" y="115" width="3" height="3" fill="#e8ff8a"/>
+        <rect x="138" y="58" width="7" height="7" fill="#e8ff8a" opacity="0.16"/><rect x="140" y="60" width="3" height="3" fill="#e8ff8a"/>
+        <rect x="24" y="163" width="7" height="7" fill="#e8ff8a" opacity="0.16"/><rect x="26" y="165" width="3" height="3" fill="#e8ff8a"/>
+        <rect x="118" y="183" width="7" height="7" fill="#e8ff8a" opacity="0.16"/><rect x="120" y="185" width="3" height="3" fill="#e8ff8a"/>
+        <!-- 薄霧(抖動邊) -->
+        <rect x="14" y="224" width="152" height="16" fill="#7ad0c0" opacity="0.08"/>
+        <rect x="14" y="230" width="152" height="10" fill="#7ad0c0" opacity="0.09"/>
+        <rect x="20" y="222" width="8" height="2" fill="#7ad0c0" opacity="0.08"/><rect x="60" y="221" width="12" height="3" fill="#7ad0c0" opacity="0.08"/><rect x="120" y="222" width="10" height="2" fill="#7ad0c0" opacity="0.08"/>
+        <!-- 角色(加陰影與描邊感) -->
+        <rect x="55" y="61" width="12" height="2" fill="#5c3a1e"/>
+        <rect x="56" y="63" width="10" height="6" fill="#f2c79a"/><rect x="57" y="64" width="3" height="2" fill="#20242e"/><rect x="62" y="64" width="3" height="2" fill="#20242e"/>
+        <rect x="54" y="69" width="14" height="8" fill="#3f6fd8"/><rect x="54" y="69" width="14" height="2" fill="#5c8ae8"/><rect x="58" y="73" width="6" height="2" fill="#2f55a8"/>
+        <rect x="56" y="77" width="4" height="4" fill="#2c3960"/><rect x="62" y="77" width="4" height="4" fill="#2c3960"/>
+        <rect x="54" y="81" width="14" height="2" fill="#0d1810" opacity="0.5"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A. 精緻像素風(16-bit)</h3>
+      <p>維持像素風,但畫得細很多:木頭有木紋、青苔有亮暗層次、葉子有兩層顏色、角色有描邊和陰影。像超任時代的遊戲。復古味保留,質感明顯升級。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="painted" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f0b;display:flex;justify-content:center;padding:12px 0">
+      <svg width="220" height="293" viewBox="0 0 180 240">
+        <defs>
+          <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#16281c"/><stop offset="0.5" stop-color="#0f1d14"/><stop offset="1" stop-color="#0a1610"/>
+          </linearGradient>
+          <linearGradient id="pwall" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2c4c36"/><stop offset="1" stop-color="#1c3424"/>
+          </linearGradient>
+          <linearGradient id="pwood" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7a5230"/><stop offset="1" stop-color="#46281a"/>
+          </linearGradient>
+          <linearGradient id="pbeam" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#9ae8d0" stop-opacity="0.22"/><stop offset="1" stop-color="#9ae8d0" stop-opacity="0.02"/>
+          </linearGradient>
+          <radialGradient id="pfly">
+            <stop offset="0" stop-color="#f0ffa0" stop-opacity="0.9"/><stop offset="0.3" stop-color="#d8f06a" stop-opacity="0.4"/><stop offset="1" stop-color="#d8f06a" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="pmist" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#9ae8d0" stop-opacity="0"/><stop offset="1" stop-color="#9ae8d0" stop-opacity="0.22"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="180" height="240" fill="url(#pbg)"/>
+        <ellipse cx="45" cy="30" rx="26" ry="10" fill="#182c1e"/><ellipse cx="112" cy="62" rx="30" ry="11" fill="#182c1e"/><ellipse cx="62" cy="152" rx="24" ry="9" fill="#182c1e"/><ellipse cx="136" cy="204" rx="26" ry="9" fill="#152618"/>
+        <polygon points="50,0 76,0 68,240 42,240" fill="url(#pbeam)"/>
+        <rect x="0" y="0" width="14" height="240" fill="url(#pwall)"/>
+        <rect x="166" y="0" width="14" height="240" fill="url(#pwall)" transform="translate(346,0) scale(-1,1)"/>
+        <ellipse cx="12" cy="54" rx="9" ry="6" fill="#356a42"/><ellipse cx="10" cy="128" rx="10" ry="6" fill="#356a42"/><ellipse cx="168" cy="96" rx="10" ry="6" fill="#356a42"/><ellipse cx="170" cy="188" rx="8" ry="5" fill="#2c5836"/>
+        <path d="M41 0 q3 24 0 48 q-2 4 1 6" stroke="#3a7048" stroke-width="3" fill="none"/>
+        <ellipse cx="37" cy="18" rx="4" ry="2.6" fill="#4f9a5e"/><ellipse cx="45" cy="36" rx="4" ry="2.6" fill="#4f9a5e"/><ellipse cx="41" cy="52" rx="5" ry="3" fill="#4f9a5e"/>
+        <circle cx="41" cy="57" r="2.4" fill="#e87aa8"/>
+        <path d="M87 0 q-3 34 0 68" stroke="#3a7048" stroke-width="3" fill="none"/>
+        <ellipse cx="83" cy="28" rx="4" ry="2.6" fill="#4f9a5e"/><ellipse cx="91" cy="50" rx="4" ry="2.6" fill="#4f9a5e"/><ellipse cx="87" cy="70" rx="5" ry="3" fill="#4f9a5e"/>
+        <circle cx="87" cy="75" r="2.4" fill="#e8b04a"/>
+        <path d="M129 0 q2 16 0 32" stroke="#3a7048" stroke-width="3" fill="none"/>
+        <ellipse cx="126" cy="16" rx="4" ry="2.6" fill="#4f9a5e"/><ellipse cx="129" cy="34" rx="5" ry="3" fill="#4f9a5e"/>
+        <g>
+          <rect x="30" y="80" width="70" height="12" rx="3" fill="url(#pwood)"/>
+          <path d="M30 82 q18 -5 35 0 q18 5 35 0 l0 4 q-18 4 -35 0 q-17 -4 -35 0 z" fill="#48945a"/>
+          <path d="M36 92 q1 6 -1 8 M54 92 q2 5 0 9 M78 92 q1 4 -1 6" stroke="#48945a" stroke-width="2.4" fill="none"/>
+          <ellipse cx="91" cy="77" rx="4.5" ry="3" fill="#d0704a"/><rect x="89.5" y="78" width="3" height="4" fill="#e0d0b0"/>
+        </g>
+        <g>
+          <rect x="95" y="140" width="60" height="12" rx="3" fill="url(#pwood)"/>
+          <path d="M95 142 q15 -5 30 0 q15 5 30 0 l0 4 q-15 4 -30 0 q-15 -4 -30 0 z" fill="#48945a"/>
+          <path d="M120 152 q1 5 -1 7 M144 152 q2 4 0 6" stroke="#48945a" stroke-width="2.4" fill="none"/>
+          <ellipse cx="141" cy="137" rx="4.5" ry="3" fill="#9a68d8"/><rect x="139.5" y="138" width="3" height="4" fill="#e0d0b0"/>
+        </g>
+        <g>
+          <rect x="40" y="200" width="66" height="12" rx="3" fill="url(#pwood)"/>
+          <path d="M40 202 q16 -5 33 0 q17 5 33 0 l0 4 q-16 4 -33 0 q-16 -4 -33 0 z" fill="#48945a"/>
+          <path d="M62 212 q1 5 -1 7 M90 212 q2 5 0 8" stroke="#48945a" stroke-width="2.4" fill="none"/>
+        </g>
+        <circle cx="61" cy="116" r="7" fill="url(#pfly)"/><circle cx="61" cy="116" r="1.8" fill="#f0ffa0"/>
+        <circle cx="141" cy="61" r="7" fill="url(#pfly)"/><circle cx="141" cy="61" r="1.8" fill="#f0ffa0"/>
+        <circle cx="27" cy="166" r="7" fill="url(#pfly)"/><circle cx="27" cy="166" r="1.8" fill="#f0ffa0"/>
+        <circle cx="121" cy="186" r="7" fill="url(#pfly)"/><circle cx="121" cy="186" r="1.8" fill="#f0ffa0"/>
+        <rect x="14" y="208" width="152" height="32" fill="url(#pmist)"/>
+        <g>
+          <ellipse cx="61" cy="82" rx="7" ry="2" fill="#0a1610" opacity="0.6"/>
+          <circle cx="61" cy="66" r="5" fill="#f2c79a"/><path d="M56 62 a5 5 0 0 1 10 0 z" fill="#6b4226"/>
+          <rect x="55" y="70" width="12" height="8" rx="2.5" fill="#4a78e0"/>
+          <rect x="56.5" y="77" width="3.6" height="4.5" rx="1.5" fill="#2c3960"/><rect x="61.9" y="77" width="3.6" height="4.5" rx="1.5" fill="#2c3960"/>
+        </g>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B. 柔和手繪風</h3>
+      <p>放棄像素,改用漸層、圓潤造型、發光效果:光柱有真實的漸淡、螢火蟲有光暈、青苔像真的長在木頭上。看起來最「精緻擬真」,但會失去復古像素味,角色也要重畫。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="pixel-plus-light" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f0b;display:flex;justify-content:center;padding:12px 0">
+      <svg width="220" height="293" viewBox="0 0 180 240">
+        <defs>
+          <linearGradient id="hbeam" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#9ae8d0" stop-opacity="0.20"/><stop offset="1" stop-color="#9ae8d0" stop-opacity="0.02"/>
+          </linearGradient>
+          <radialGradient id="hfly">
+            <stop offset="0" stop-color="#f0ffa0" stop-opacity="0.9"/><stop offset="0.3" stop-color="#d8f06a" stop-opacity="0.4"/><stop offset="1" stop-color="#d8f06a" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="hmist" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#9ae8d0" stop-opacity="0"/><stop offset="1" stop-color="#9ae8d0" stop-opacity="0.20"/>
+          </linearGradient>
+          <linearGradient id="hvig" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#000" stop-opacity="0.35"/><stop offset="0.25" stop-color="#000" stop-opacity="0"/><stop offset="0.75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.3"/>
+          </linearGradient>
+        </defs>
+        <g shape-rendering="crispEdges" style="image-rendering:pixelated">
+          <rect x="0" y="0" width="180" height="240" fill="#101c14"/>
+          <rect x="24" y="26" width="34" height="12" fill="#16241a"/><rect x="30" y="22" width="18" height="4" fill="#16241a"/>
+          <rect x="92" y="58" width="42" height="12" fill="#16241a"/><rect x="100" y="54" width="22" height="4" fill="#16241a"/>
+          <rect x="44" y="150" width="36" height="10" fill="#16241a"/><rect x="118" y="200" width="38" height="10" fill="#16241a"/>
+          <rect x="60" y="104" width="26" height="8" fill="#131f16"/><rect x="128" y="122" width="30" height="8" fill="#131f16"/>
+          <rect x="0" y="0" width="14" height="240" fill="#22402c"/>
+          <rect x="166" y="0" width="14" height="240" fill="#22402c"/>
+          <rect x="10" y="0" width="4" height="240" fill="#1a3222"/><rect x="166" y="0" width="4" height="240" fill="#2a4c35"/>
+          <rect x="2" y="20" width="8" height="2" fill="#2c5038"/><rect x="4" y="64" width="8" height="2" fill="#2c5038"/><rect x="2" y="132" width="8" height="2" fill="#2c5038"/><rect x="4" y="196" width="8" height="2" fill="#2c5038"/>
+          <rect x="168" y="44" width="8" height="2" fill="#2c5038"/><rect x="170" y="108" width="8" height="2" fill="#2c5038"/><rect x="168" y="170" width="8" height="2" fill="#2c5038"/>
+          <rect x="0" y="40" width="14" height="2" fill="#0d1810"/><rect x="0" y="110" width="14" height="2" fill="#0d1810"/><rect x="0" y="180" width="14" height="2" fill="#0d1810"/>
+          <rect x="166" y="70" width="14" height="2" fill="#0d1810"/><rect x="166" y="140" width="14" height="2" fill="#0d1810"/><rect x="166" y="205" width="14" height="2" fill="#0d1810"/>
+          <rect x="8" y="50" width="12" height="9" fill="#2e5c3a"/><rect x="10" y="48" width="8" height="4" fill="#3f7a4c"/>
+          <rect x="6" y="124" width="14" height="9" fill="#2e5c3a"/><rect x="8" y="122" width="9" height="4" fill="#3f7a4c"/>
+          <rect x="158" y="92" width="16" height="9" fill="#2e5c3a"/><rect x="162" y="90" width="9" height="4" fill="#3f7a4c"/>
+          <rect x="162" y="184" width="12" height="8" fill="#2e5c3a"/>
+          <rect x="40" y="0" width="3" height="48" fill="#35633f"/>
+          <rect x="36" y="16" width="6" height="4" fill="#4a8a58"/><rect x="42" y="34" width="6" height="4" fill="#4a8a58"/><rect x="37" y="46" width="9" height="5" fill="#4a8a58"/>
+          <rect x="39" y="54" width="4" height="3" fill="#d86a9a"/>
+          <rect x="86" y="0" width="3" height="68" fill="#35633f"/>
+          <rect x="82" y="26" width="6" height="4" fill="#4a8a58"/><rect x="88" y="48" width="6" height="4" fill="#4a8a58"/><rect x="83" y="66" width="9" height="5" fill="#4a8a58"/>
+          <rect x="85" y="74" width="4" height="3" fill="#e8b04a"/>
+          <rect x="128" y="0" width="3" height="32" fill="#35633f"/><rect x="124" y="14" width="6" height="4" fill="#4a8a58"/><rect x="125" y="30" width="9" height="5" fill="#4a8a58"/>
+          <rect x="30" y="80" width="70" height="12" fill="#5c3a24"/>
+          <rect x="30" y="80" width="70" height="4" fill="#3f8752"/><rect x="32" y="79" width="20" height="2" fill="#57a868"/><rect x="66" y="79" width="14" height="2" fill="#57a868"/>
+          <rect x="30" y="90" width="70" height="2" fill="#3d2415"/>
+          <rect x="38" y="86" width="10" height="2" fill="#6e4a2c"/><rect x="58" y="85" width="12" height="2" fill="#6e4a2c"/><rect x="82" y="86" width="10" height="2" fill="#6e4a2c"/>
+          <rect x="34" y="92" width="3" height="6" fill="#3f8752"/><rect x="76" y="92" width="3" height="5" fill="#3f8752"/><rect x="52" y="92" width="3" height="7" fill="#3f8752"/>
+          <rect x="88" y="74" width="7" height="4" fill="#c96a4a"/><rect x="89" y="73" width="5" height="2" fill="#e08a5c"/><rect x="90" y="78" width="3" height="3" fill="#d8c9a8"/>
+          <rect x="95" y="140" width="60" height="12" fill="#5c3a24"/>
+          <rect x="95" y="140" width="60" height="4" fill="#3f8752"/><rect x="98" y="139" width="16" height="2" fill="#57a868"/>
+          <rect x="95" y="150" width="60" height="2" fill="#3d2415"/>
+          <rect x="102" y="146" width="10" height="2" fill="#6e4a2c"/><rect x="126" y="145" width="12" height="2" fill="#6e4a2c"/>
+          <rect x="120" y="152" width="3" height="6" fill="#3f8752"/><rect x="144" y="152" width="3" height="4" fill="#3f8752"/>
+          <rect x="138" y="134" width="7" height="4" fill="#8a5ac9"/><rect x="140" y="138" width="3" height="3" fill="#d8c9a8"/>
+          <rect x="40" y="200" width="66" height="12" fill="#5c3a24"/>
+          <rect x="40" y="200" width="66" height="4" fill="#3f8752"/><rect x="44" y="199" width="18" height="2" fill="#57a868"/>
+          <rect x="40" y="210" width="66" height="2" fill="#3d2415"/>
+          <rect x="48" y="206" width="12" height="2" fill="#6e4a2c"/><rect x="76" y="205" width="10" height="2" fill="#6e4a2c"/>
+          <rect x="60" y="212" width="3" height="5" fill="#3f8752"/><rect x="90" y="212" width="3" height="6" fill="#3f8752"/>
+          <rect x="55" y="61" width="12" height="2" fill="#5c3a1e"/>
+          <rect x="56" y="63" width="10" height="6" fill="#f2c79a"/><rect x="57" y="64" width="3" height="2" fill="#20242e"/><rect x="62" y="64" width="3" height="2" fill="#20242e"/>
+          <rect x="54" y="69" width="14" height="8" fill="#3f6fd8"/><rect x="54" y="69" width="14" height="2" fill="#5c8ae8"/>
+          <rect x="56" y="77" width="4" height="4" fill="#2c3960"/><rect x="62" y="77" width="4" height="4" fill="#2c3960"/>
+          <rect x="54" y="81" width="14" height="2" fill="#0d1810" opacity="0.5"/>
+        </g>
+        <!-- 平滑光影疊在像素上 -->
+        <polygon points="50,0 76,0 68,240 42,240" fill="url(#hbeam)"/>
+        <circle cx="61" cy="116" r="8" fill="url(#hfly)"/><rect x="60" y="115" width="3" height="3" fill="#f0ffa0"/>
+        <circle cx="141" cy="61" r="8" fill="url(#hfly)"/><rect x="140" y="60" width="3" height="3" fill="#f0ffa0"/>
+        <circle cx="27" cy="166" r="8" fill="url(#hfly)"/><rect x="26" y="165" width="3" height="3" fill="#f0ffa0"/>
+        <circle cx="121" cy="186" r="8" fill="url(#hfly)"/><rect x="120" y="185" width="3" height="3" fill="#f0ffa0"/>
+        <rect x="14" y="204" width="152" height="36" fill="url(#hmist)"/>
+        <rect x="0" y="0" width="180" height="240" fill="url(#hvig)"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C. 精緻像素 + 真實光影(推薦)</h3>
+      <p>A 的精緻像素當底,再疊上平滑的光影:漸層光柱、螢火蟲光暈、流動薄霧、畫面上下的暗角。像素的復古味還在,但光線是「真的」,是現代獨立遊戲最流行的做法。</p>
+    </div>
+  </div>
+
+</div>

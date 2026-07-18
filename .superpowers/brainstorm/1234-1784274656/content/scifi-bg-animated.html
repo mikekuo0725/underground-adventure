@@ -1,0 +1,74 @@
+<h2>科幻關背景:動畫效果展示(會動的!)</h2>
+<p class="subtitle">用 Warped City 的真實素材做的動態展示。下面這個畫面裡的所有動畫,遊戲裡都做得出來。看完告訴我哪些要、哪些不要。</p>
+
+<style>
+  .demo{position:relative;width:100%;max-width:720px;aspect-ratio:16/9;overflow:hidden;background:#2b2138;border-radius:8px}
+  .demo *, .demo{image-rendering:pixelated}
+  .lyr{position:absolute;inset:0;background-repeat:repeat-x}
+  .l-sky{background-image:url('/files/wc-skyline-a.png');background-size:auto 100%;animation:panx 90s linear infinite}
+  .l-mid{background-image:url('/files/wc-buildings.png');background-size:auto 80%;background-position:left bottom;animation:panx 45s linear infinite}
+  .l-near{background-image:url('/files/wc-near.png');background-size:auto 64%;background-position:left bottom;animation:panx 20s linear infinite}
+  @keyframes panx{from{background-position-x:0}to{background-position-x:-1024px}}
+
+  .frames{position:absolute}
+  .frames img{position:absolute;left:0;top:0;opacity:0;width:100%}
+  .frames img:nth-child(1){animation:cyc4 1.2s steps(1) infinite}
+  .frames img:nth-child(2){animation:cyc4 1.2s steps(1) infinite -0.9s}
+  .frames img:nth-child(3){animation:cyc4 1.2s steps(1) infinite -0.6s}
+  .frames img:nth-child(4){animation:cyc4 1.2s steps(1) infinite -0.3s}
+  @keyframes cyc4{0%,24.9%{opacity:1}25%,100%{opacity:0}}
+  .frames.f3 img:nth-child(1){animation:cyc3 1.05s steps(1) infinite}
+  .frames.f3 img:nth-child(2){animation:cyc3 1.05s steps(1) infinite -0.7s}
+  .frames.f3 img:nth-child(3){animation:cyc3 1.05s steps(1) infinite -0.35s}
+  @keyframes cyc3{0%,33.2%{opacity:1}33.3%,100%{opacity:0}}
+
+  .car{position:absolute;width:96px;animation:fly 9s linear infinite}
+  @keyframes fly{from{transform:translateX(-120px)}to{transform:translateX(840px)}}
+  .car2{position:absolute;width:72px;animation:fly2 13s linear infinite}
+  @keyframes fly2{from{transform:translateX(840px) scaleX(-1)}to{transform:translateX(-120px) scaleX(-1)}}
+
+  .drone{position:absolute;width:44px;animation:bob 2.4s ease-in-out infinite alternate}
+  @keyframes bob{from{transform:translateY(0)}to{transform:translateY(14px)}}
+
+  .flicker{animation:flick 3.7s steps(1) infinite}
+  @keyframes flick{0%,72%{opacity:1}73%,76%{opacity:.25}77%,86%{opacity:1}87%,89%{opacity:.25}90%,100%{opacity:1}}
+</style>
+
+<div class="demo">
+  <div class="lyr l-sky"></div>
+  <div class="lyr l-mid"></div>
+  <img class="car" src="/files/v-red.png" style="top:12%">
+  <img class="car2" src="/files/v-police.png" style="top:30%">
+  <div class="lyr l-near"></div>
+
+  <div class="frames" style="left:8%;bottom:6%;width:38px;height:96px">
+    <img src="/files/banner-neon-1.png"><img src="/files/banner-neon-2.png"><img src="/files/banner-neon-3.png"><img src="/files/banner-neon-4.png">
+  </div>
+
+  <div class="frames" style="left:58%;bottom:10%;width:64px;height:64px">
+    <img src="/files/monitor-face-1.png"><img src="/files/monitor-face-2.png"><img src="/files/monitor-face-3.png"><img src="/files/monitor-face-4.png">
+  </div>
+
+  <div class="frames f3" style="left:78%;bottom:8%;width:56px;height:72px">
+    <img src="/files/banner-sushi-1.png"><img src="/files/banner-sushi-2.png"><img src="/files/banner-sushi-3.png">
+  </div>
+
+  <img class="flicker" src="/files/hotel-sign.png" style="position:absolute;left:34%;bottom:14%;width:100px">
+
+  <div class="drone" style="left:44%;top:38%">
+    <div class="frames" style="left:0;top:0;width:44px;height:42px">
+      <img src="/files/drone-1.png"><img src="/files/drone-2.png"><img src="/files/drone-3.png"><img src="/files/drone-4.png">
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:18px">
+  <div class="label">這個展示裡有 5 種背景動畫(遊戲裡全部可行)</div>
+  <ul>
+    <li><strong>視差捲動</strong> — 三層背景以不同速度移動,產生景深(遊戲裡會隨你下樓緩緩捲動)</li>
+    <li><strong>霓虹招牌逐格動畫</strong> — 左邊直式霓虹燈、中間電視牆人臉、右邊壽司招牌,都是素材包附的多格動畫</li>
+    <li><strong>招牌故障閃爍</strong> — HOTEL 招牌會像接觸不良一樣忽明忽暗(賽博龐克靈魂)</li>
+    <li><strong>飛行車穿越</strong> — 紅色跑車和警車不定時從背景飛過</li>
+    <li><strong>無人機盤旋</strong> — 上下漂浮 + 螺旋槳動畫(之後也會當障礙物用)</li>
+  </ul>
+</div>

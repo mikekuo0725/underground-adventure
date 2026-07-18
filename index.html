@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>像素下樓梯</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#0f0c16;overflow:hidden}
+  #wrap{position:fixed;left:0;top:0;right:0;bottom:0;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 42%,#1b1526 0%,#0f0c16 75%);
+    touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+</style>
+<div id="wrap"><canvas id="cv" width="360" height="640"></canvas></div>
+<script>
+'use strict';
+/* ============ 像素下樓梯 ============
+   經典下樓梯玩法：畫面不斷上捲，往下踩平台求生。
+   平台：普通(回血) / 尖刺(扣血) / 輸送帶 / 彈跳
+   深度越深捲動越快，深度即分數。
+==================================== */
+const W = 360, H = 640;
+const cv = document.getElementById('cv');
+const wrap = document.getElementById('wrap');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// ---- 版面自適應（維持 360x640 比例、像素縮放）----
+function fit(){
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  cv.style.width  = Math.floor(W * s) + 'px';
+  cv.style.height = Math.floor(H * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+// ---- 調色盤（復古洞穴）----
+const C = {
+  bg:      '#241f35',
+  wall:    '#332a4a', wallSeam:'#241f35', wallHi:'#453a63',
+  hud:     '#141020', hudLine:'#3a3050',
+  text:    '#f4ead8', dim:'#8f86a8', gold:'#ffd75e', danger:'#e14b4b',
+  brick:   '#7a4a2e', brickHi:'#a86a3f', brickLo:'#4e2d1c',
+  steel:   '#cbd2e0', steelLo:'#5b6473',
+  belt:    '#8a6a1f', beltHi:'#e0b13e',
+  spring:  '#2f8f4a', springHi:'#6fe08a',
+  hpOn:    '#e14b4b', hpOff:'#3a2430'
+};
+
+// ---- 遊戲常數 ----
+const WALL = 14;             // 兩側牆寬
+const HUD_H = 30;            // 頂部資訊列高
+const CEIL_Y = HUD_H + 14;   // 尖刺天花板底部（碰撞線）
+const GRAV = 1500, MOVE = 185, MAXFALL = 520;
+const GAP = 72, PLAT_H = 13;
+const PW = 22, PH = 30;      // 角色碰撞盒
+const MAX_HP = 10;
+
+// ---- 狀態 ----
+let state = 'menu';          // menu | play | over
+let plats = [], player = null;
+let scroll = 0, depth = 0, scrollSpeed = 55;
+let time = 0, overAt = 0, newBest = false;
+let best = 0;
+try { best = +(localStorage.getItem('downstairs-best') || 0) || 0; } catch(e){}
+
+// ---- 音效（WebAudio 小方波，不需外部檔案）----
+let AC = null;
+function initAudio(){
+  if(!AC){ try{ AC = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
+  if(AC && AC.state === 'suspended') AC.resume();
+}
+function tone(f0, f1, dur, type, vol){
+  if(!AC) return;
+  try{
+    const t = AC.currentTime;
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.linearRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(AC.destination);
+    o.start(t); o.stop(t + dur);
+  }catch(e){}
+}
+const snd = {
+  land(){ tone(180, 140, .06, 'square',   .10); },
+  heal(){ tone(520, 780, .08, 'square',   .07); },
+  spring(){ tone(300, 720, .18, 'square', .14); },
+  hurt(){ tone(320, 110, .22, 'sawtooth', .18); },
+  over(){ tone(380, 70,  .70, 'sawtooth', .20); },
+  start(){ tone(440, 880, .15, 'square',  .13); }
+};
+
+// ---- 角色像素圖（字元對應顏色，'.' 透明，繪製時放大 2 倍）----
+const SPAL = { h:'#6b4226', s:'#f2c79a', k:'#20242e', b:'#3f6fd8', B:'#2f55a8', d:'#2c3960', f:'#1d222e' };
+const SPR = {
+  stand: [
+    '...hhhhh...',
+    '..hhhhhhh..',
+    '..hsssssh..',
+    '..sksssks..',
+    '..sssssss..',
+    '...sssss...',
+    '..bbbbbbb..',
+    '.sbbbbbbbs.',
+    '.sbbbBbbbs.',
+    '..bbbbbbb..',
+    '..ddddddd..',
+    '...dd.dd...',
+    '...dd.dd...',
+    '...dd.dd...',
+    '..ff...ff..'
+  ],
+  run: [
+    '...hhhhh...',
+    '..hhhhhhh..',
+    '..hsssssh..',
+    '..sksssks..',
+    '..sssssss..',
+    '...sssss...',
+    '..bbbbbbb..',
+    '.sbbbbbbbs.',
+    '.sbbbBbbbs.',
+    '..bbbbbbb..',
+    '..ddddddd..',
+    '..dd...dd..',
+    '.dd.....dd.',
+    '.dd.....dd.',
+    '.ff.....ff.'
+  ],
+  fall: [
+    '.s.hhhhh.s.',
+    '.shhhhhhhs.',
+    '.shssssshs.',
+    '..sksssks..',
+    '..sssssss..',
+    '...sssss...',
+    '..bbbbbbb..',
+    '.bbbbbbbbb.',
+    '..bbbBbbb..',
+    '..bbbbbbb..',
+    '..ddddddd..',
+    '..dd...dd..',
+    '..dd...dd..',
+    '.dd.....dd.',
+    '.ff.....ff.'
+  ]
+};
+function drawSprite(map, x, y, flip, scale){
+  const sc = scale || 2;
+  for(let r = 0; r < map.length; r++){
+    const row = map[r];
+    for(let c = 0; c < row.length; c++){
+      const ch = flip ? row[row.length - 1 - c] : row[c];
+      if(ch === '.') continue;
+      ctx.fillStyle = SPAL[ch];
+      ctx.fillRect(Math.round(x + c * sc), Math.round(y + r * sc), sc, sc);
+    }
+  }
+}
+
+// ---- 平台 ----
+let lastWasSpike = false;
+function platType(){
+  const d = depth;
+  const spike  = Math.min(.04 + d * .0011, .22);
+  const conv   = Math.min(.05 + d * .0008, .16);
+  const spring = .07;
+  const r = Math.random();
+  if(r < spike) return 'spike';
+  if(r < spike + conv) return 'conv';
+  if(r < spike + conv + spring) return 'spring';
+  return 'norm';
+}
+function spawn(y, forceNorm){
+  const w = 50 + Math.random() * 85;
+  const x = WALL + Math.random() * (W - 2 * WALL - w);
+  let t = forceNorm ? 'norm' : platType();
+  if(t === 'spike' && lastWasSpike) t = 'norm';   // 避免連續兩層尖刺
+  lastWasSpike = (t === 'spike');
+  // 愛心補血包：越深出現機率越高，只長在普通與輸送帶平台上
+  const heartChance = Math.min(.03 + depth * .0005, .14);
+  const heart = !forceNorm && (t === 'norm' || t === 'conv') && Math.random() < heartChance;
+  plats.push({ x, y, w, t, heart, dir: Math.random() < .5 ? -1 : 1, anim: Math.random() * 9, squash: 0 });
+}
+
+// ---- 初始化 ----
+function reset(){
+  plats = []; scroll = 0; depth = 0; scrollSpeed = 55;
+  newBest = false; lastWasSpike = false;
+  player = { x: W/2 - PW/2, y: 0, vy: 0, face: 1, hp: MAX_HP,
+             inv: 0, stand: null, animT: 0, moving: false };
+  plats.push({ x: W/2 - 45, y: 190, w: 90, t: 'norm', dir: 1, anim: 0, squash: 0 });
+  player.y = 190 - PH;
+  player.stand = plats[0];
+  for(let y = 190 + GAP; y < H + 40; y += GAP) spawn(y, y < 430);
+}
+
+// ---- 傷害 / 落地 / 結束 ----
+function hurt(n){
+  if(player.inv > 0) return;
+  player.inv = 1.1;
+  player.hp -= n;
+  snd.hurt();
+  if(player.hp <= 0){ player.hp = 0; gameOver(); }
+}
+function land(p){
+  p.squash = .15;
+  if(p.t === 'spring'){
+    player.vy = -560; player.stand = null; p.squash = .3;
+    snd.spring();
+    return;
+  }
+  player.stand = p; player.vy = 0; player.y = p.y - PH;
+  if(p.t === 'spike') hurt(2);
+  else snd.land();
+}
+function gameOver(){
+  state = 'over'; overAt = time;
+  const score = Math.floor(depth);
+  if(score > best){
+    best = score; newBest = true;
+    try{ localStorage.setItem('downstairs-best', String(best)); }catch(e){}
+  }
+  snd.over();
+}
+
+// ---- 更新 ----
+function update(dt){
+  time += dt;
+  scrollSpeed = Math.min(55 + depth * .62, 245);
+  const sc = scrollSpeed * dt;
+  scroll += sc;
+  depth = scroll / 28;
+
+  for(const p of plats){
+    p.y -= sc;
+    p.anim += dt;
+    if(p.squash > 0) p.squash -= dt;
+  }
+
+  // 水平移動（鍵盤 + 觸控 + 輸送帶）
+  const dir = inputDir();
+  player.moving = dir !== 0;
+  if(dir !== 0) player.face = dir;
+  let dx = dir * MOVE * dt;
+  if(player.stand && player.stand.t === 'conv') dx += player.stand.dir * 78 * dt;
+  player.x = Math.max(WALL, Math.min(W - WALL - PW, player.x + dx));
+  if(player.moving) player.animT += dt;
+  if(player.inv > 0) player.inv -= dt;
+
+  // 站立狀態：跟著平台上移，走出邊緣就掉落
+  if(player.stand){
+    const p = player.stand;
+    if(p.y < CEIL_Y - 4 || player.x + PW <= p.x + 3 || player.x >= p.x + p.w - 3 || plats.indexOf(p) < 0){
+      player.stand = null; player.vy = 0;
+    } else {
+      player.y = p.y - PH;
+    }
+  }
+
+  // 下落與著地判定
+  if(!player.stand){
+    const prevBottom = player.y + PH;
+    player.vy = Math.min(player.vy + GRAV * dt, MAXFALL);
+    player.y += player.vy * dt;
+    if(player.vy > 0){
+      const bottom = player.y + PH;
+      let landP = null, landY = 1e9;
+      for(const p of plats){
+        const pPrevY = p.y + sc;
+        if(prevBottom <= pPrevY + 2 && bottom >= p.y &&
+           player.x + PW > p.x + 3 && player.x < p.x + p.w - 3){
+          if(p.y < landY){ landY = p.y; landP = p; }
+        }
+      }
+      if(landP) land(landP);
+    }
+  }
+
+  // 撿愛心補血
+  for(const p of plats){
+    if(!p.heart) continue;
+    const hx = p.x + p.w / 2 - 7, hy = p.y - 18 + Math.sin(p.anim * 3) * 2;
+    if(player.x < hx + 14 && player.x + PW > hx && player.y < hy + 12 && player.y + PH > hy){
+      p.heart = false;
+      player.hp = Math.min(MAX_HP, player.hp + 2);
+      snd.heal();
+    }
+  }
+
+  // 尖刺天花板
+  if(player.y < CEIL_Y){
+    hurt(2);
+    if(state !== 'play') return;
+    player.stand = null; player.y = CEIL_Y + 2; player.vy = 260;
+  }
+
+  // 掉出畫面
+  if(player.y > H + 10){ gameOver(); return; }
+
+  // 清除離開頂部的平台、往下補新平台
+  plats = plats.filter(p => p.y > -30);
+  let lowest = 0;
+  for(const p of plats) lowest = Math.max(lowest, p.y);
+  while(lowest < H + 40){ lowest += GAP; spawn(lowest); }
+}
+
+// ---- 繪製 ----
+function drawWalls(){
+  ctx.fillStyle = C.wall;
+  ctx.fillRect(0, 0, WALL, H);
+  ctx.fillRect(W - WALL, 0, WALL, H);
+  const off = 16 - (scroll % 16);
+  ctx.fillStyle = C.wallSeam;
+  for(let y = off - 16; y < H; y += 16){
+    ctx.fillRect(0, Math.round(y), WALL, 2);
+    ctx.fillRect(W - WALL, Math.round(y + 8), WALL, 2);
+  }
+  ctx.fillStyle = C.wallHi;
+  ctx.fillRect(WALL - 2, 0, 2, H);
+  ctx.fillRect(W - WALL, 0, 2, H);
+}
+function drawPlat(p){
+  const x = Math.round(p.x), y = Math.round(p.y), w = Math.round(p.w);
+  if(p.t === 'spike'){
+    ctx.fillStyle = C.steelLo;
+    ctx.fillRect(x, y + 6, w, PLAT_H - 6);
+    ctx.fillStyle = C.steel;
+    for(let sx = x; sx + 10 <= x + w; sx += 10){
+      ctx.beginPath();
+      ctx.moveTo(sx + 1, y + 6); ctx.lineTo(sx + 5, y); ctx.lineTo(sx + 9, y + 6);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = C.danger;
+    ctx.fillRect(x, y + 6, w, 2);
+    return;
+  }
+  if(p.t === 'conv'){
+    ctx.fillStyle = C.belt;
+    ctx.fillRect(x, y, w, PLAT_H);
+    ctx.fillStyle = C.beltHi;
+    ctx.fillRect(x, y, w, 2);
+    const off = ((p.anim * 46 * p.dir) % 12 + 12) % 12;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x + 2, y + 3, w - 4, 8); ctx.clip();
+    for(let sx = x - 12 + off; sx < x + w + 12; sx += 12){
+      ctx.beginPath();
+      if(p.dir > 0){ ctx.moveTo(sx, y + 3); ctx.lineTo(sx + 5, y + 7); ctx.lineTo(sx, y + 11); ctx.lineTo(sx + 2, y + 7); }
+      else { ctx.moveTo(sx + 5, y + 3); ctx.lineTo(sx, y + 7); ctx.lineTo(sx + 5, y + 11); ctx.lineTo(sx + 3, y + 7); }
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
+  if(p.t === 'spring'){
+    const sq = p.squash > 0 ? 4 : 0;
+    ctx.fillStyle = C.spring;
+    ctx.fillRect(x, y + sq, w, PLAT_H - sq);
+    ctx.fillStyle = C.springHi;
+    ctx.fillRect(x, y + sq, w, 3);
+    ctx.fillStyle = '#1d5c31';
+    for(let sx = x + 4; sx + 6 <= x + w; sx += 10) ctx.fillRect(sx, y + sq + 5, 6, 2);
+    return;
+  }
+  // 普通磚塊平台
+  ctx.fillStyle = C.brick;
+  ctx.fillRect(x, y, w, PLAT_H);
+  ctx.fillStyle = C.brickHi;
+  ctx.fillRect(x, y, w, 3);
+  ctx.fillStyle = C.brickLo;
+  ctx.fillRect(x, y + PLAT_H - 2, w, 2);
+  for(let sx = x + 12; sx < x + w - 3; sx += 16) ctx.fillRect(sx, y + 3, 2, PLAT_H - 5);
+}
+const HEART = [
+  '.hh.hh.',
+  'hWhhhhh',
+  'hhhhhhh',
+  '.hhhhh.',
+  '..hhh..',
+  '...h...'
+];
+function drawHeart(p){
+  const hx = Math.round(p.x + p.w / 2 - 7);
+  const hy = Math.round(p.y - 18 + Math.sin(p.anim * 3) * 2);
+  for(let r = 0; r < HEART.length; r++){
+    for(let c = 0; c < HEART[r].length; c++){
+      const ch = HEART[r][c];
+      if(ch === '.') continue;
+      ctx.fillStyle = ch === 'W' ? '#ffc9d4' : '#ff5a77';
+      ctx.fillRect(hx + c * 2, hy + r * 2, 2, 2);
+    }
+  }
+}
+function drawCeiling(){
+  ctx.fillStyle = C.steelLo;
+  ctx.fillRect(WALL, HUD_H, W - 2 * WALL, 4);
+  ctx.fillStyle = C.steel;
+  for(let sx = WALL; sx + 12 <= W - WALL + 11; sx += 12){
+    ctx.beginPath();
+    ctx.moveTo(sx, HUD_H + 4); ctx.lineTo(Math.min(sx + 6, W - WALL), HUD_H + 14); ctx.lineTo(Math.min(sx + 12, W - WALL), HUD_H + 4);
+    ctx.closePath(); ctx.fill();
+  }
+}
+function drawPlayer(){
+  if(player.inv > 0 && Math.floor(time * 14) % 2 === 0) return;
+  let map = SPR.stand;
+  if(!player.stand) map = SPR.fall;
+  else if(player.moving) map = (Math.floor(player.animT / .12) % 2 === 0) ? SPR.run : SPR.stand;
+  drawSprite(map, player.x, player.y, player.face < 0, 2);
+}
+function drawHUD(){
+  ctx.fillStyle = C.hud;
+  ctx.fillRect(0, 0, W, HUD_H);
+  ctx.fillStyle = C.hudLine;
+  ctx.fillRect(0, HUD_H - 2, W, 2);
+  // 血量格
+  for(let i = 0; i < MAX_HP; i++){
+    ctx.fillStyle = i < player.hp ? C.hpOn : C.hpOff;
+    ctx.fillRect(8 + i * 10, 8, 7, 13);
+  }
+  // 深度與最高分
+  ctx.textAlign = 'right';
+  ctx.fillStyle = C.gold;
+  ctx.font = 'bold 15px Consolas,monospace';
+  ctx.fillText(Math.floor(depth) + ' m', W - 8, 15);
+  ctx.fillStyle = C.dim;
+  ctx.font = 'bold 10px Consolas,monospace';
+  ctx.fillText('最佳 ' + best + ' m', W - 8, 27);
+  ctx.textAlign = 'left';
+}
+function centerText(txt, y, font, color){
+  ctx.textAlign = 'center';
+  ctx.font = font;
+  ctx.fillStyle = color;
+  ctx.fillText(txt, W / 2, y);
+  ctx.textAlign = 'left';
+}
+function drawMenu(){
+  centerText('像 素 下 樓 梯', 150, 'bold 34px Consolas,monospace', C.gold);
+  centerText('─ 往下跳，越深越高分 ─', 182, 'bold 13px Consolas,monospace', C.dim);
+  drawSprite(SPR.run, W/2 - 22, 230, false, 4);
+  const lines = [
+    ['電腦', '← → 方向鍵移動'],
+    ['手機', '按住螢幕左右兩側'],
+    ['尖刺 / 天花板', '碰到扣 2 格血'],
+    ['愛心', '撿到回 2 格血'],
+    ['彈簧平台', '把你往上彈'],
+    ['輸送帶', '會把你往旁邊帶']
+  ];
+  let y = 340;
+  ctx.font = 'bold 13px Consolas,monospace';
+  for(const [a, b] of lines){
+    ctx.textAlign = 'right'; ctx.fillStyle = C.gold;
+    ctx.fillText(a, W/2 - 10, y);
+    ctx.textAlign = 'left'; ctx.fillStyle = C.text;
+    ctx.fillText(b, W/2 + 2, y);
+    y += 24;
+  }
+  if(best > 0) centerText('最高紀錄 ' + best + ' m', y + 18, 'bold 14px Consolas,monospace', C.dim);
+  if(Math.floor(time * 2) % 2 === 0)
+    centerText('點擊螢幕或按任意鍵開始', 570, 'bold 15px Consolas,monospace', C.text);
+}
+function drawOver(){
+  ctx.fillStyle = 'rgba(10,8,16,.74)';
+  ctx.fillRect(0, 0, W, H);
+  centerText('遊 戲 結 束', 230, 'bold 32px Consolas,monospace', C.danger);
+  centerText('本次深度', 290, 'bold 14px Consolas,monospace', C.dim);
+  centerText(Math.floor(depth) + ' m', 330, 'bold 34px Consolas,monospace', C.gold);
+  if(newBest && Math.floor(time * 3) % 2 === 0)
+    centerText('★ 新紀錄！', 365, 'bold 16px Consolas,monospace', C.gold);
+  else if(!newBest)
+    centerText('最高紀錄 ' + best + ' m', 365, 'bold 13px Consolas,monospace', C.dim);
+  if(time - overAt > .7 && Math.floor(time * 2) % 2 === 0)
+    centerText('點擊螢幕或按任意鍵再玩一次', 440, 'bold 14px Consolas,monospace', C.text);
+}
+function draw(){
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawWalls();
+  if(state === 'menu'){ drawMenu(); return; }
+  for(const p of plats) drawPlat(p);
+  for(const p of plats) if(p.heart) drawHeart(p);
+  drawPlayer();
+  drawCeiling();
+  drawHUD();
+  if(state === 'over') drawOver();
+}
+
+// ---- 輸入 ----
+const keys = { left: false, right: false };
+const touchSides = new Map();   // pointerId -> 'left' | 'right'
+function inputDir(){
+  let d = 0;
+  if(keys.left) d--;
+  if(keys.right) d++;
+  let tl = false, tr = false;
+  for(const s of touchSides.values()){ if(s === 'left') tl = true; else tr = true; }
+  if(tl) d--;
+  if(tr) d++;
+  return Math.max(-1, Math.min(1, d));
+}
+function tryStart(){
+  if(state === 'menu' || (state === 'over' && time - overAt > .7)){
+    reset(); state = 'play'; snd.start();
+  }
+}
+addEventListener('keydown', e => {
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  initAudio();
+  if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+  if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+  if(!e.repeat) tryStart();
+});
+addEventListener('keyup', e => {
+  if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+  if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+});
+wrap.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  initAudio();
+  if(state !== 'play'){ tryStart(); return; }
+  touchSides.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right');
+});
+function releasePointer(e){ touchSides.delete(e.pointerId); }
+wrap.addEventListener('pointerup', releasePointer);
+wrap.addEventListener('pointercancel', releasePointer);
+wrap.addEventListener('contextmenu', e => e.preventDefault());
+
+// ---- 主迴圈（固定步長，畫面更穩定）----
+let last = performance.now(), acc = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000;
+  last = now;
+  if(dt > .1) dt = .1;
+  if(state === 'play'){
+    acc += dt;
+    const step = 1 / 120;
+    let n = 0;
+    while(acc >= step && n < 24 && state === 'play'){ update(step); acc -= step; n++; }
+  } else {
+    time += dt;
+  }
+  draw();
+}
+reset();
+state = 'menu';
+requestAnimationFrame(frame);
+</script>
+</html>

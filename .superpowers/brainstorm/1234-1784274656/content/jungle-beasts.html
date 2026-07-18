@@ -1,0 +1,43 @@
+<h2>叢林關:竄過畫面的野獸</h2>
+<p class="subtitle">對應科幻關的飛行車 — 野獸會不定時從畫面一側跑過(在背景層,不會傷到玩家)。為了跟叢林畫風融合,我會把牠們處理成深色剪影 + 一點月光輪廓,像在黑暗中看到野獸掠過。</p>
+
+<h3>第一組:選素材包</h3>
+<div class="cards" style="grid-template-columns:1fr;max-width:900px">
+
+  <div class="card" data-choice="wild-animals" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#14231c;padding:12px;text-align:center">
+      <img src="https://opengameart.org/sites/default/files/Wild%20Animals%20Gif_3.gif" alt="Animated Wild Animals" style="max-width:100%;height:auto;image-rendering:pixelated">
+      <div style="margin-top:8px">
+        <img src="https://opengameart.org/sites/default/files/Bear%20Preview_0.gif" style="max-width:23%;image-rendering:pixelated">
+        <img src="https://opengameart.org/sites/default/files/Wolf%20Preview_0.gif" style="max-width:23%;image-rendering:pixelated">
+        <img src="https://opengameart.org/sites/default/files/Fox%20Preview_0.gif" style="max-width:23%;image-rendering:pixelated">
+        <img src="https://opengameart.org/sites/default/files/Boar%20Preview_3.gif" style="max-width:23%;image-rendering:pixelated">
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Animated Wild Animals(推薦)</h3>
+      <p><strong>授權:CC0(免署名)</strong>。六種動物:鹿、熊、狼、狐狸、山豬、兔子,每隻都有走路/奔跑/待機三種動畫,品質高、動作流暢(上面的預覽會動)。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="forest-sheet" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#14231c;padding:12px;text-align:center">
+      <img src="https://opengameart.org/sites/default/files/enemies_081719_zp_0.png" alt="Forest Animals Sprite Sheet" style="max-width:100%;height:auto;image-rendering:pixelated">
+    </div>
+    <div class="card-body">
+      <h3>B. Forest Animals Sprite Sheet</h3>
+      <p><strong>授權:CC0</strong>。狼、熊、老鼠、山豬,RPG 敵人風格,動畫格數較少。</p>
+    </div>
+  </div>
+
+</div>
+
+<h3 style="margin-top:20px">第二組:要哪些動物?(可複選)</h3>
+<div class="options" data-multiselect style="max-width:900px">
+  <div class="option" data-choice="boar" onclick="toggleSelect(this)"><div class="letter">豬</div><div class="content"><h3>山豬</h3><p>低身衝刺,最有叢林感(推薦)</p></div></div>
+  <div class="option" data-choice="wolf" onclick="toggleSelect(this)"><div class="letter">狼</div><div class="content"><h3>狼</h3><p>快速掠過,剪影最帥(推薦)</p></div></div>
+  <div class="option" data-choice="deer" onclick="toggleSelect(this)"><div class="letter">鹿</div><div class="content"><h3>鹿</h3><p>優雅跳躍穿過(推薦)</p></div></div>
+  <div class="option" data-choice="bear" onclick="toggleSelect(this)"><div class="letter">熊</div><div class="content"><h3>熊</h3><p>緩慢沉重地走過</p></div></div>
+  <div class="option" data-choice="fox" onclick="toggleSelect(this)"><div class="letter">狐</div><div class="content"><h3>狐狸</h3><p>小巧靈活</p></div></div>
+  <div class="option" data-choice="rabbit" onclick="toggleSelect(this)"><div class="letter">兔</div><div class="content"><h3>兔子</h3><p>蹦蹦跳跳,可愛擔當</p></div></div>
+</div>
