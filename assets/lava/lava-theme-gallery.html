@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第五關「熔火地心」素材方向圖廊</title>
+<style>
+  :root {
+    --bg: #16121f;
+    --card: #241d31;
+    --line: #3a3050;
+    --accent: #df7126;
+    --text: #eee6d8;
+    --muted: #9b8fa8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    padding: 32px 20px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 26px; margin-bottom: 8px; color: var(--accent); }
+  .sub { color: var(--muted); margin-bottom: 36px; line-height: 1.7; }
+  h2 {
+    font-size: 20px;
+    margin: 44px 0 6px;
+    padding-left: 12px;
+    border-left: 5px solid var(--accent);
+  }
+  .desc { color: var(--muted); margin-bottom: 16px; line-height: 1.7; font-size: 14px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .card .label { font-size: 14px; margin-top: 10px; }
+  .card .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card img, .card canvas {
+    image-rendering: pixelated;
+    background: #100c18;
+    border-radius: 6px;
+    display: block;
+    margin: 0 auto;
+  }
+  .warm { filter: sepia(0.85) hue-rotate(-28deg) saturate(2.6) brightness(0.92); }
+  .warm2 { filter: sepia(0.9) hue-rotate(-32deg) saturate(3) brightness(1.0); }
+  .arrow { align-self: center; font-size: 28px; color: var(--accent); padding: 0 4px; }
+  .tag {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: #3a2a1a; color: #f0a860; margin-left: 6px; vertical-align: 2px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔥 第五關「熔火地心」素材方向圖廊</h1>
+<p class="sub">
+  路線:<b>OPP 洞穴包暖色重製</b>(CC0,與第四關冰封礦坑同一包,風格無縫連戲)。<br>
+  下面分三區:① OPP 現成素材直接用 ② 岩壁暖色重製前後對比 ③ 缺件由程式照 DB32 色盤自畫的動態示意。<br>
+  看完跟 Claude 說 OK 或要調哪裡。
+</p>
+
+<h2>① OPP 現成素材,直接拿來用</h2>
+<p class="desc">這些都在手上的素材包裡,零額外授權。</p>
+<div class="grid">
+  <div class="card">
+    <img src="../ice/opp_cave/opp3_cave_tiles/environment/tiles/cave/tile_cave_bg_lava.png" width="256">
+    <div class="label">熔岩岩堆(背景裝飾)</div>
+    <div class="note">畫面中景的岩漿丘,原包現成</div>
+  </div>
+  <div class="card">
+    <img src="../ice/opp_cave/opp3_cave_tiles/environment/tiles/cave/tile_cave_obelisk_anim.gif" width="128">
+    <div class="label">符文方尖碑(動畫)</div>
+    <div class="note">「遠古痕跡」主元素,紅符文會發光</div>
+  </div>
+  <div class="card">
+    <img src="../ice/opp_cave/opp3_cave_tiles/environment/objects/obj_chest_open_anim.gif" width="128">
+    <div class="label">寶箱開啟動畫</div>
+    <div class="note">500m 祭壇彩蛋場景直接用</div>
+  </div>
+  <div class="card">
+    <img src="../ice/opp_cave/opp3_cave_tiles/cart/spr_obj_cart_str_complete_anim.gif" width="128">
+    <div class="label">礦車</div>
+    <div class="note">半融化漂在岩漿裡當彩蛋(續第四關暗線)</div>
+  </div>
+</div>
+
+<h2>② 岩壁暖色重製:前 → 後 <span class="tag">CSS 濾鏡示意,實作時逐像素換色更精緻</span></h2>
+<p class="desc">同一批岩壁磚,從冰礦的冷藍紫調成黑曜岩暖棕紅——玩家會感覺「同一座礦坑,越往下越熱」。</p>
+<div class="grid">
+  <div class="card">
+    <img src="../ice/opp_cave/opp3_cave_tiles/environment/tiles/cave/tile_cave_bg_rock.png" width="220">
+    <div class="label">原版(第四關冷色)</div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="card">
+    <img class="warm" src="../ice/opp_cave/opp3_cave_tiles/environment/tiles/cave/tile_cave_bg_rock.png" width="220">
+    <div class="label">暖色重製(第五關)</div>
+  </div>
+  <div class="card">
+    <img src="../ice/opp_cave/opp3_cave_tiles/environment/background/bg_cave.png" width="220">
+    <div class="label">背景岩壁・原版</div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="card">
+    <img class="warm2" src="../ice/opp_cave/opp3_cave_tiles/environment/background/bg_cave.png" width="220">
+    <div class="label">背景岩壁・暖色重製</div>
+  </div>
+</div>
+
+<h2>③ 程式自畫元件(DB32 色盤)動態示意</h2>
+<p class="desc">素材包沒有的元件,照 OPP 的 DB32 色盤程式繪製(第一、四關同做法)。以下是即時畫的示意動畫,定稿會再細修。</p>
+<div class="grid">
+  <div class="card">
+    <canvas id="cv-lava" width="96" height="48" style="width:288px;height:144px"></canvas>
+    <div class="label">岩漿河(流動 + 氣泡)</div>
+    <div class="note">整關主光源,底部與背景用</div>
+  </div>
+  <div class="card">
+    <canvas id="cv-melt" width="120" height="40" style="width:360px;height:120px"></canvas>
+    <div class="label">融化平台三階段</div>
+    <div class="note">正常 → 發紅滴落 → 沉沒消失(1.5 秒)</div>
+  </div>
+  <div class="card">
+    <canvas id="cv-wisp" width="48" height="48" style="width:144px;height:144px"></canvas>
+    <div class="label">火焰精靈</div>
+    <div class="note">空中飄移,碰到扣血</div>
+  </div>
+  <div class="card">
+    <canvas id="cv-slab" width="72" height="32" style="width:216px;height:96px"></canvas>
+    <div class="label">遠古石板(耐熱平台)</div>
+    <div class="note">唯一喘息點,符文微光</div>
+  </div>
+  <div class="card">
+    <canvas id="cv-coin" width="72" height="36" style="width:216px;height:108px"></canvas>
+    <div class="label">遠古金幣 / 熔金塊</div>
+    <div class="note">+100 / +500 分</div>
+  </div>
+  <div class="card">
+    <canvas id="cv-drip" width="48" height="64" style="width:144px;height:192px"></canvas>
+    <div class="label">墜落岩漿滴</div>
+    <div class="note">聚滴發亮預告 → 滴落</div>
+  </div>
+</div>
+
+<script>
+// DB32 暖色系
+const C = {
+  black:'#000000', dark:'#222034', maroon:'#45283c', brown:'#663931',
+  rust:'#8f563b', orange:'#df7126', sand:'#d9a066', cream:'#eec39a',
+  yellow:'#fbf236', red:'#ac3232', salmon:'#d95763', grey:'#595652',
+  slate:'#323c39', white:'#ffffff'
+};
+let t = 0;
+
+function px(g, x, y, c, s=1){ g.fillStyle = c; g.fillRect(x, y, s, s); }
+
+// 岩漿河
+const gLava = document.getElementById('cv-lava').getContext('2d');
+function drawLava(){
+  const w = 96, h = 48;
+  gLava.fillStyle = C.dark; gLava.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x++){
+    const surf = 14 + Math.round(Math.sin(x*0.28 + t*0.06)*2 + Math.sin(x*0.11 - t*0.04)*2);
+    for (let y = surf; y < h; y++){
+      const d = y - surf;
+      let c = d < 2 ? C.yellow : d < 5 ? C.orange : d < 12 ? C.red : C.maroon;
+      if (d >= 5 && d < 12 && Math.sin(x*0.7 + y*1.3 + t*0.09) > 0.75) c = C.orange;
+      px(gLava, x, y, c);
+    }
+  }
+  // 氣泡
+  for (let i = 0; i < 4; i++){
+    const bx = (i*29 + Math.floor(t/3)*7) % w;
+    const ph = (t/2 + i*13) % 26;
+    if (ph < 5){
+      const surf = 14 + Math.round(Math.sin(bx*0.28 + t*0.06)*2);
+      gLava.fillStyle = ph < 3 ? C.yellow : C.orange;
+      gLava.beginPath();
+      gLava.arc(bx, surf - 1, ph < 3 ? 1.5 : 2.5, 0, 7); gLava.fill();
+    }
+  }
+}
+
+// 融化平台三階段
+const gMelt = document.getElementById('cv-melt').getContext('2d');
+function drawMelt(){
+  gMelt.clearRect(0, 0, 120, 40);
+  const stages = [0, 1, 2];
+  stages.forEach((s, i) => {
+    const ox = i*40 + 4;
+    const sink = s === 2 ? 6 + Math.round(Math.sin(t*0.1)*1.5) : 0;
+    for (let x = 0; x < 32; x++){
+      for (let y = 0; y < 10; y++){
+        const yy = 12 + y + sink;
+        if (yy > 36) continue;
+        let c;
+        if (y === 0) c = s === 0 ? C.grey : s === 1 ? C.salmon : C.red;
+        else if (y < 3) c = s === 0 ? C.slate : s === 1 ? C.rust : C.red;
+        else c = s === 0 ? C.dark : C.maroon;
+        if (s > 0 && y > 2 && (x + y) % 5 === 0) c = C.orange; // 裂縫透光
+        px(gMelt, ox + x, yy, c);
+      }
+    }
+    // 滴落
+    if (s >= 1){
+      for (let d = 0; d < (s === 1 ? 2 : 4); d++){
+        const dx = ox + 5 + d*8;
+        const dy = 22 + sink + ((t*1.5 + d*7) % 12);
+        px(gMelt, dx, dy, d % 2 ? C.orange : C.red);
+        px(gMelt, dx, dy+1, C.red);
+      }
+    }
+  });
+}
+
+// 火焰精靈
+const gWisp = document.getElementById('cv-wisp').getContext('2d');
+function drawWisp(){
+  gWisp.clearRect(0, 0, 48, 48);
+  const cx = 24 + Math.sin(t*0.05)*6, cy = 24 + Math.sin(t*0.11)*3;
+  const flick = Math.sin(t*0.3)*1.5;
+  // 外焰→內焰→眼睛
+  gWisp.fillStyle = C.red;
+  gWisp.beginPath(); gWisp.ellipse(cx, cy, 7, 9 + flick, 0, 0, 7); gWisp.fill();
+  gWisp.fillStyle = C.orange;
+  gWisp.beginPath(); gWisp.ellipse(cx, cy+1, 5, 7 + flick, 0, 0, 7); gWisp.fill();
+  gWisp.fillStyle = C.yellow;
+  gWisp.beginPath(); gWisp.ellipse(cx, cy+2, 3, 4, 0, 0, 7); gWisp.fill();
+  px(gWisp, cx-2, cy, C.dark, 2); px(gWisp, cx+1, cy, C.dark, 2);
+  // 尾焰粒子
+  for (let i = 0; i < 3; i++){
+    const a = t*0.2 + i*2.1;
+    px(gWisp, cx + Math.sin(a)*9, cy - 8 - i*3 + Math.sin(t*0.15+i)*2, i ? C.red : C.orange);
+  }
+}
+
+// 遠古石板
+const gSlab = document.getElementById('cv-slab').getContext('2d');
+function drawSlab(){
+  gSlab.clearRect(0, 0, 72, 32);
+  for (let x = 0; x < 56; x++){
+    for (let y = 0; y < 12; y++){
+      let c = y === 0 ? C.cream : y < 3 ? C.sand : y < 5 ? C.rust : C.brown;
+      if (y > 0 && (x === 0 || x === 55)) c = C.brown;
+      px(gSlab, 8 + x, 12 + y, c);
+    }
+  }
+  // 符文微光
+  const glow = (Math.sin(t*0.08) + 1) / 2;
+  const runes = [[14,15],[22,16],[30,15],[38,16],[46,15]];
+  runes.forEach(([rx, ry], i) => {
+    gSlab.fillStyle = glow > (i%3)*0.3 ? C.yellow : C.orange;
+    gSlab.fillRect(rx, ry, 2, 3);
+    if (glow > 0.6){ gSlab.globalAlpha = 0.35; gSlab.fillRect(rx-1, ry-1, 4, 5); gSlab.globalAlpha = 1; }
+  });
+}
+
+// 金幣
+const gCoin = document.getElementById('cv-coin').getContext('2d');
+function drawCoin(){
+  gCoin.clearRect(0, 0, 72, 36);
+  // 遠古金幣(旋轉)
+  const wobble = Math.abs(Math.sin(t*0.07));
+  const rw = Math.max(2, Math.round(7*wobble));
+  gCoin.fillStyle = C.sand;
+  gCoin.beginPath(); gCoin.ellipse(18, 18, rw, 8, 0, 0, 7); gCoin.fill();
+  gCoin.fillStyle = C.yellow;
+  gCoin.beginPath(); gCoin.ellipse(18, 18, Math.max(1, rw-2), 6, 0, 0, 7); gCoin.fill();
+  if (rw > 4){ gCoin.fillStyle = C.rust; gCoin.fillRect(17, 14, 2, 8); gCoin.fillRect(15, 17, 6, 2); }
+  // 熔金塊
+  for (let x = 0; x < 16; x++){
+    const top = 14 + Math.round(Math.sin(x*0.6 + t*0.05)*1.5);
+    for (let y = top; y < 26; y++){
+      let c = y === top ? C.white : y < top+3 ? C.yellow : y < top+7 ? C.sand : C.orange;
+      px(gCoin, 44 + x, y, c);
+    }
+  }
+}
+
+// 岩漿滴
+const gDrip = document.getElementById('cv-drip').getContext('2d');
+function drawDrip(){
+  gDrip.clearRect(0, 0, 48, 64);
+  // 天花板
+  for (let x = 0; x < 48; x++) for (let y = 0; y < 6; y++) px(gDrip, x, y, y < 3 ? C.dark : C.maroon);
+  // 鐘乳石
+  [[10,8],[24,11],[38,7]].forEach(([sx, sh]) => {
+    for (let y = 0; y < sh; y++){
+      const w2 = Math.max(1, Math.round((sh-y)/2));
+      for (let x = -w2; x <= w2; x++) px(gDrip, sx+x, 6+y, C.slate);
+    }
+  });
+  // 聚滴 → 落下循環
+  const ph = (t/2) % 30;
+  if (ph < 14){ // 聚滴發亮預告
+    const r = 1 + ph/7;
+    gDrip.fillStyle = ph % 4 < 2 ? C.yellow : C.orange;
+    gDrip.beginPath(); gDrip.arc(24, 18 + r, r, 0, 7); gDrip.fill();
+  } else { // 滴落
+    const dy = 19 + (ph-14)*2.6;
+    gDrip.fillStyle = C.orange;
+    gDrip.beginPath(); gDrip.ellipse(24, dy, 2, 3.5, 0, 0, 7); gDrip.fill();
+    px(gDrip, 23, dy-4, C.red); px(gDrip, 24, dy-6, C.red);
+  }
+}
+
+function loop(){
+  t++;
+  drawLava(); drawMelt(); drawWisp(); drawSlab(); drawCoin(); drawDrip();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
