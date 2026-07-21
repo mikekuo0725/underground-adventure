@@ -222,7 +222,7 @@ const snd = {
   start(){ tone(440, 880, .15, 'square',  .13); }
 };
 
-// ---- 角色像素圖（字元對應顏色，'.' 透明，繪製時放大 2 倍）----
+// ---- 角色像素圖（字元對應顏色，'.' 透明，23x30 已是遊戲內實際顯示尺寸，對應碰撞盒 PW/PH）----
 const COMMON_PAL = { f:'#f0c8a0', F:'#d4a87e', e:'#1d1610', x:'#ffffff', w:'#8a3c28' };
 const SPAL = Object.assign({}, COMMON_PAL, {
   '#':'#2a1a10', h:'#6b4a2b', H:'#543a20', i:'#8a6538',
@@ -345,16 +345,25 @@ function spawn(y, forceNorm){
     x, y, w, category, obstacleKey, heart, coin,
     dir: Math.random() < .5 ? -1 : 1, anim: Math.random() * 9, squash: 0, crumbleT: -1
   });
+  const flyCheck = forceNorm ? { spawn: false } : shouldSpawnFlyer(theme, dInLevel);
+  if (flyCheck.spawn){
+    fliers.push({
+      x: WALL + Math.random() * (W - 2 * WALL - 16), y: y - GAP / 2,
+      dir: Math.random() < .5 ? -1 : 1, speed: 40 + Math.random() * 30,
+      obstacleKey: flyCheck.obstacleKey, anim: Math.random() * 9, alive: true
+    });
+  }
 }
 
 // ---- 初始化 ----
 function reset(){
-  plats = []; scroll = 0; depth = 0; scrollSpeed = 55;
+  plats = []; fliers = []; scroll = 0; depth = 0; scrollSpeed = 55;
   newBest = false; lastWasDanger = false;
   score = 0; coinsCollected = 0; newBestScore = false;
   player = { x: W/2 - PW/2, y: 0, vy: 0, face: 1, hp: MAX_HP,
              inv: 0, stand: null, animT: 0, moving: false };
-  plats.push({ x: W/2 - 45, y: 190, w: 90, t: 'norm', dir: 1, anim: 0, squash: 0 });
+  plats.push({ x: W/2 - 45, y: 190, w: 90, category: 'norm', obstacleKey: null, heart: false, coin: null,
+               dir: 1, anim: 0, squash: 0, crumbleT: -1 });
   player.y = 190 - PH;
   player.stand = plats[0];
   for(let y = 190 + GAP; y < H + 40; y += GAP) spawn(y, y < 430);
@@ -370,14 +379,31 @@ function hurt(n){
 }
 function land(p){
   p.squash = .15;
-  if(p.t === 'spring'){
+  if (p.category === 'bounce'){
     player.vy = -560; player.stand = null; p.squash = .3;
     snd.spring();
     return;
   }
   player.stand = p; player.vy = 0; player.y = p.y - PH;
-  if(p.t === 'spike') hurt(2);
-  else snd.land();
+  if (p.category === 'crumble' && p.crumbleT < 0) p.crumbleT = 0;
+  if (p.category === 'cycleDanger'){
+    const cfg = obstacleConfig(p);
+    p._lastPhase = cyclePhase(p, cfg);
+    if (p._lastPhase === 'danger') hurt(2); else snd.land();
+  } else if (p.category !== 'bounce') {
+    snd.land();
+  }
+}
+function obstacleConfig(p){
+  const theme = currentTheme();
+  return theme.obstacles.find(o => o.key === p.obstacleKey) || {};
+}
+function cyclePhase(p, cfg){
+  const total = (cfg.cycleSafe || 1.5) + (cfg.cycleWarn || 0.5) + (cfg.cycleDanger || 0.5);
+  const t = p.anim % total;
+  if (t < cfg.cycleSafe) return 'safe';
+  if (t < cfg.cycleSafe + cfg.cycleWarn) return 'warn';
+  return 'danger';
 }
 function gameOver(){
   state = 'over'; overAt = time;
@@ -407,14 +433,31 @@ function update(dt){
     p.y -= sc;
     p.anim += dt;
     if(p.squash > 0) p.squash -= dt;
+    if(p.category === 'crumble' && p.crumbleT >= 0){
+      p.crumbleT += dt;
+      if(p.crumbleT > 0.8 && player.stand === p){
+        player.stand = null; player.vy = 0;
+      }
+    }
   }
+  for(const f of fliers){
+    f.y -= sc;
+    f.anim += dt;
+    f.x += f.dir * f.speed * dt;
+    if(f.x < WALL){ f.x = WALL; f.dir = 1; }
+    if(f.x > W - WALL - 16){ f.x = W - WALL - 16; f.dir = -1; }
+    if(f.alive && player.x < f.x + 14 && player.x + PW > f.x && player.y < f.y + 10 && player.y + PH > f.y){
+      f.alive = false;
+      hurt(2);
+    }
+  }
+  fliers = fliers.filter(f => f.alive !== false && f.y > -30);
 
-  // 水平移動（鍵盤 + 觸控 + 輸送帶）
+  // 水平移動（鍵盤 + 觸控）
   const dir = inputDir();
   player.moving = dir !== 0;
   if(dir !== 0) player.face = dir;
   let dx = dir * MOVE * dt;
-  if(player.stand && player.stand.t === 'conv') dx += player.stand.dir * 78 * dt;
   player.x = Math.max(WALL, Math.min(W - WALL - PW, player.x + dx));
   if(player.moving) player.animT += dt;
   if(player.inv > 0) player.inv -= dt;
@@ -422,6 +465,12 @@ function update(dt){
   // 站立狀態：跟著平台上移，走出邊緣就掉落
   if(player.stand){
     const p = player.stand;
+    if (p.category === 'cycleDanger'){
+      const cfg = obstacleConfig(p);
+      const phase = cyclePhase(p, cfg);
+      if (phase === 'danger' && p._lastPhase !== 'danger') hurt(2);
+      p._lastPhase = phase;
+    }
     if(p.y < CEIL_Y - 4 || player.x + PW <= p.x + 3 || player.x >= p.x + p.w - 3 || plats.indexOf(p) < 0){
       player.stand = null; player.vy = 0;
     } else {
@@ -482,7 +531,8 @@ function update(dt){
   // 掉出畫面
   if(player.y > H + 10){ gameOver(); return; }
 
-  // 清除離開頂部的平台、往下補新平台
+  // 清除已碎裂完的平台、離開頂部的平台，往下補新平台
+  plats = plats.filter(p => !(p.category === 'crumble' && p.crumbleT >= 1.1));
   plats = plats.filter(p => p.y > -30);
   let lowest = 0;
   for(const p of plats) lowest = Math.max(lowest, p.y);
@@ -521,44 +571,43 @@ function drawWalls(){
 }
 function drawPlat(p){
   const x = Math.round(p.x), y = Math.round(p.y), w = Math.round(p.w);
-  if(p.t === 'spike'){
-    ctx.fillStyle = C().steelLo;
-    ctx.fillRect(x, y + 6, w, PLAT_H - 6);
-    ctx.fillStyle = C().steel;
-    for(let sx = x; sx + 10 <= x + w; sx += 10){
-      ctx.beginPath();
-      ctx.moveTo(sx + 1, y + 6); ctx.lineTo(sx + 5, y); ctx.lineTo(sx + 9, y + 6);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.fillStyle = C().danger;
-    ctx.fillRect(x, y + 6, w, 2);
-    return;
-  }
-  if(p.t === 'conv'){
-    ctx.fillStyle = C.belt;
+  if (p.category === 'crumble'){
+    const cracked = p.crumbleT > 0.3;
+    ctx.fillStyle = 'rgba(200,220,255,0.35)';
     ctx.fillRect(x, y, w, PLAT_H);
-    ctx.fillStyle = C.beltHi;
-    ctx.fillRect(x, y, w, 2);
-    const off = ((p.anim * 46 * p.dir) % 12 + 12) % 12;
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x + 2, y + 3, w - 4, 8); ctx.clip();
-    for(let sx = x - 12 + off; sx < x + w + 12; sx += 12){
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1;
+    if (cracked){
       ctx.beginPath();
-      if(p.dir > 0){ ctx.moveTo(sx, y + 3); ctx.lineTo(sx + 5, y + 7); ctx.lineTo(sx, y + 11); ctx.lineTo(sx + 2, y + 7); }
-      else { ctx.moveTo(sx + 5, y + 3); ctx.lineTo(sx, y + 7); ctx.lineTo(sx + 5, y + 11); ctx.lineTo(sx + 3, y + 7); }
-      ctx.closePath(); ctx.fill();
+      ctx.moveTo(x + w * 0.3, y); ctx.lineTo(x + w * 0.5, y + PLAT_H);
+      ctx.moveTo(x + w * 0.6, y); ctx.lineTo(x + w * 0.4, y + PLAT_H);
+      ctx.stroke();
     }
-    ctx.restore();
     return;
   }
-  if(p.t === 'spring'){
+  if (p.category === 'cycleDanger'){
+    const cfg = obstacleConfig(p);
+    const phase = cyclePhase(p, cfg);
+    const col = phase === 'danger' ? C().danger : phase === 'warn' ? '#e0b13e' : C().plat;
+    ctx.fillStyle = col;
+    ctx.fillRect(x, y, w, PLAT_H);
+    ctx.fillStyle = C().platHi;
+    ctx.fillRect(x, y, w, 2);
+    if (phase !== 'safe'){
+      const spin = (p.anim * (phase === 'danger' ? 12 : 6)) % 4;
+      ctx.fillStyle = '#333';
+      for (let sx = x + 6; sx + 4 <= x + w - 6; sx += 10) ctx.fillRect(sx, y + 4 + Math.sin(spin) * 2, 4, 4);
+    }
+    return;
+  }
+  if (p.category === 'bounce'){
     const sq = p.squash > 0 ? 4 : 0;
-    ctx.fillStyle = C.spring;
+    ctx.fillStyle = '#c9853a';
     ctx.fillRect(x, y + sq, w, PLAT_H - sq);
-    ctx.fillStyle = C.springHi;
+    ctx.fillStyle = '#e8b06a';
     ctx.fillRect(x, y + sq, w, 3);
-    ctx.fillStyle = '#1d5c31';
-    for(let sx = x + 4; sx + 6 <= x + w; sx += 10) ctx.fillRect(sx, y + sq + 5, 6, 2);
+    ctx.fillStyle = '#8a5a24';
+    for (let sx = x + 4; sx + 6 <= x + w; sx += 10) ctx.fillRect(sx, y + sq + 5, 6, 2);
     return;
   }
   // 普通磚塊平台
@@ -569,6 +618,20 @@ function drawPlat(p){
   ctx.fillStyle = C().platLo;
   ctx.fillRect(x, y + PLAT_H - 2, w, 2);
   for(let sx = x + 12; sx < x + w - 3; sx += 16) ctx.fillRect(sx, y + 3, 2, PLAT_H - 5);
+}
+function drawFlier(f){
+  const x = Math.round(f.x), y = Math.round(f.y + Math.sin(f.anim * 4) * 3);
+  const flap = Math.floor(f.anim * 8) % 2;
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillRect(x + 4, y + 2, 8, 6);
+  ctx.fillStyle = '#e8e8e8';
+  if (flap === 0){
+    ctx.fillRect(x, y, 4, 3);
+    ctx.fillRect(x + 10, y, 4, 3);
+  } else {
+    ctx.fillRect(x + 1, y + 3, 4, 2);
+    ctx.fillRect(x + 9, y + 3, 4, 2);
+  }
 }
 const HEART = [
   '.hh.hh.',
@@ -617,7 +680,7 @@ function drawPlayer(){
   let map = SPR.stand;
   if(!player.stand) map = SPR.fall;
   else if(player.moving) map = (Math.floor(player.animT / .12) % 2 === 0) ? SPR.run1 : SPR.run2;
-  drawSprite(map, player.x, player.y, player.face < 0, 2);
+  drawSprite(map, player.x, player.y, player.face < 0, 1);
 }
 function drawHUD(){
   ctx.fillStyle = C().hud;
@@ -690,6 +753,7 @@ function draw(){
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
   for(const p of plats) if(p.coin) drawCoin(p);
+  for(const f of fliers) drawFlier(f);
   drawPlayer();
   drawCeiling();
   drawHUD();
