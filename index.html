@@ -55,6 +55,129 @@ const GAP = 72, PLAT_H = 13;
 const PW = 22, PH = 30;      // 角色碰撞盒
 const MAX_HP = 10;
 
+// ---- 主題設定表 ----
+const LEVEL_LEN = 100; // 公尺
+const THEMES = [
+  {
+    id: 'city', name: '晴空大樓', banner: '☀️ 晴空大樓',
+    startDepth: 0, endDepth: 100, isFinal: false,
+    scrollSpeed: [55, 95], dangerProb: [0.08, 0.18],
+    colors: {
+      bg: '#8fd6f2', wall: '#c9a468', wallSeam: '#a8804a', wallHi: '#e6cfa0',
+      hud: '#141020', hudLine: '#3a3050',
+      text: '#f4ead8', dim: '#8f86a8', gold: '#ffd75e', danger: '#e14b4b',
+      plat: '#e8e0c8', platHi: '#fff8e0', platLo: '#b8ac86',
+      steel: '#cbd2e0', steelLo: '#5b6473', hpOn: '#e14b4b', hpOff: '#3a2430'
+    },
+    obstacles: [
+      { key: 'glassAwning', category: 'crumble' },
+      { key: 'acUnit', category: 'cycleDanger', cycleSafe: 1.6, cycleWarn: 0.6, cycleDanger: 0.5 },
+      { key: 'pigeon', category: 'flyer' },
+      { key: 'canvasAwning', category: 'bounce' }
+    ],
+    coinPalette: { body: '#ffd75e', hi: '#fff3c0', lo: '#c99a1e' },
+    ceilingStyle: 'scaffold'
+  },
+  {
+    id: 'jungle', name: '幽暗雨林', banner: '🌿 幽暗雨林',
+    startDepth: 100, endDepth: 200, isFinal: false,
+    scrollSpeed: [88, 135], dangerProb: [0.16, 0.26],
+    colors: {
+      bg: '#161f2c', wall: '#3a2a1c', wallSeam: '#241a10', wallHi: '#5a4228',
+      hud: '#141020', hudLine: '#3a3050',
+      text: '#f4ead8', dim: '#8f86a8', gold: '#ffd75e', danger: '#e14b4b',
+      plat: '#3e6b3a', platHi: '#6ea864', platLo: '#213b1f',
+      steel: '#8a7a5c', steelLo: '#4a3f2e', hpOn: '#e14b4b', hpOff: '#3a2430'
+    },
+    obstacles: [
+      { key: 'branch', category: 'crumble' },
+      { key: 'flower', category: 'cycleDanger', cycleSafe: 1.4, cycleWarn: 0.5, cycleDanger: 0.6 },
+      { key: 'wasp', category: 'flyer' },
+      { key: 'mushroom', category: 'bounce' }
+    ],
+    coinPalette: { body: '#e8a838', hi: '#ffd775', lo: '#a86a1e' },
+    ceilingStyle: 'thorns'
+  }
+];
+
+function themeIndexForDepth(depth){
+  let idx = 0;
+  for (let i = 0; i < THEMES.length; i++){
+    if (depth >= THEMES[i].startDepth) idx = i;
+  }
+  return idx;
+}
+function currentTheme(){ return THEMES[themeIndexForDepth(depth)]; }
+function depthInLevel(depth, theme){
+  const span = theme.endDepth - theme.startDepth;
+  return Math.max(0, Math.min(span, depth - theme.startDepth));
+}
+function isTeachingPhase(dInLevel){ return dInLevel < 30; }
+function unlockedObstacleCount(theme, dInLevel){
+  if (!isTeachingPhase(dInLevel)) return theme.obstacles.length;
+  const per = 30 / theme.obstacles.length;
+  return Math.max(1, Math.min(theme.obstacles.length, Math.floor(dInLevel / per) + 1));
+}
+function dangerProbFor(theme, dInLevel){
+  if (dInLevel > 85) return theme.dangerProb[1];
+  const t = dInLevel / 100;
+  return theme.dangerProb[0] + (theme.dangerProb[1] - theme.dangerProb[0]) * t;
+}
+function pickPlatformCategory(theme, dInLevel, lastWasDanger){
+  const unlocked = theme.obstacles.slice(0, unlockedObstacleCount(theme, dInLevel));
+  const steppable = unlocked.filter(o => o.category !== 'flyer');
+  const dangerKinds = steppable.filter(o => o.category === 'crumble' || o.category === 'cycleDanger');
+  const bounceKinds = steppable.filter(o => o.category === 'bounce');
+  const totalDanger = dangerKinds.length ? dangerProbFor(theme, dInLevel) : 0;
+  const perDanger = dangerKinds.length ? totalDanger / dangerKinds.length : 0;
+  const bounceProb = bounceKinds.length ? 0.07 : 0;
+  const r = Math.random();
+  let acc = 0;
+  if (!lastWasDanger){
+    for (const o of dangerKinds){
+      acc += perDanger;
+      if (r < acc) return { category: o.category, obstacleKey: o.key };
+    }
+  }
+  if (r < acc + bounceProb && bounceKinds.length){
+    const o = bounceKinds[Math.floor(Math.random() * bounceKinds.length)];
+    return { category: o.category, obstacleKey: o.key };
+  }
+  return { category: 'norm', obstacleKey: null };
+}
+function shouldSpawnFlyer(theme, dInLevel){
+  const unlocked = theme.obstacles.slice(0, unlockedObstacleCount(theme, dInLevel));
+  const flyers = unlocked.filter(o => o.category === 'flyer');
+  if (!flyers.length) return { spawn: false, obstacleKey: null };
+  const prob = dangerProbFor(theme, dInLevel) * 0.5;
+  if (Math.random() < prob){
+    const o = flyers[Math.floor(Math.random() * flyers.length)];
+    return { spawn: true, obstacleKey: o.key };
+  }
+  return { spawn: false, obstacleKey: null };
+}
+
+// ---- THEMES 自我檢查(開發用,確認後可保留,不影響正式邏輯) ----
+(function selfTestThemes(){
+  console.assert(THEMES.length === 2, 'THEMES 應有 2 筆');
+  console.assert(themeIndexForDepth(0) === 0, 'depth 0 應屬於第 0 關');
+  console.assert(themeIndexForDepth(99) === 0, 'depth 99 應屬於第 0 關');
+  console.assert(themeIndexForDepth(100) === 1, 'depth 100 應屬於第 1 關');
+  console.assert(themeIndexForDepth(250) === 1, 'depth 250 應夾在最後一關');
+  const city = THEMES[0];
+  console.assert(depthInLevel(50, city) === 50, 'depthInLevel 基本值');
+  console.assert(depthInLevel(500, city) === 100, 'depthInLevel 應夾在關卡長度內');
+  console.assert(isTeachingPhase(10) === true, '10m 應在教學段');
+  console.assert(isTeachingPhase(31) === false, '31m 應脫離教學段');
+  console.assert(unlockedObstacleCount(city, 0) === 1, '0m 只解鎖 1 種障礙');
+  console.assert(unlockedObstacleCount(city, 29) === 4, '29m 應該 4 種全解鎖(30/4=7.5,29 落在第4段)');
+  console.assert(unlockedObstacleCount(city, 50) === 4, '教學段後應全解鎖');
+  console.assert(Math.abs(dangerProbFor(city, 0) - 0.08) < 1e-9, '起始危險機率應等於下限');
+  console.assert(Math.abs(dangerProbFor(city, 100) - 0.18) < 1e-9, '結尾危險機率應等於上限(關尾高峰)');
+  console.assert(Math.abs(dangerProbFor(city, 90) - 0.18) < 1e-9, '85m 後應直接拉滿上限');
+  console.log('%c[THEMES self-test] 全數通過', 'color:#6fe08a');
+})();
+
 // ---- 狀態 ----
 let state = 'menu';          // menu | play | over
 let plats = [], player = null;
