@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>探險少年 姿勢過目預覽</title>
+<style>
+  body{
+    margin: 0;
+    padding: 32px;
+    background: #14100c;
+    color: #eae0d0;
+    font-family: 'Consolas', 'Microsoft JhengHei', monospace;
+  }
+  h1{
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  p.note{
+    color: #a89a86;
+    font-size: 13px;
+    margin: 0 0 28px;
+  }
+  .row{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .cell{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  canvas{
+    background: #241c14;
+    border: 1px solid #4a3a28;
+    image-rendering: pixelated;
+  }
+  .label{
+    font-size: 14px;
+    font-weight: bold;
+    color: #d9a441;
+  }
+  .section-title{
+    font-size: 15px;
+    color: #7ecbe8;
+    margin: 36px 0 12px;
+  }
+</style>
+</head>
+<body>
+  <h1>探險少年 — 跑步 / 落下 姿勢過目預覽</h1>
+  <p class="note">四格為單一靜態姿勢，右側為 stand → run1 → run2 → fall 自動循環播放（約 8fps）。放大 6 倍方便檢視像素細節。</p>
+
+  <div class="row" id="poseRow"></div>
+
+  <div class="section-title">動畫循環預覽（自動播放）</div>
+  <div class="row">
+    <div class="cell">
+      <canvas id="cycleCanvas"></canvas>
+      <div class="label" id="cycleLabel">stand</div>
+    </div>
+  </div>
+
+<script>
+// ==== 以下三段（SPAL / SPR / drawSprite）直接複製自 index.html，僅供此過目預覽頁獨立使用 ====
+const COMMON_PAL = { f:'#f0c8a0', F:'#d4a87e', e:'#1d1610', x:'#ffffff', w:'#8a3c28' };
+const SPAL = Object.assign({}, COMMON_PAL, {
+  '#':'#2a1a10', h:'#6b4a2b', H:'#543a20', i:'#8a6538',
+  g:'#d9a441', G:'#a87828', l:'#7ecbe8', L:'#e8f8ff',
+  r:'#d43d2a', R:'#a02a1c', q:'#f06848',
+  t:'#c8a45a', T:'#a3843f', k:'#7a5c30', K:'#5c4322',
+  d:'#5a3d26', p:'#6e4f30', P:'#54391e', b:'#3a2718', B:'#241708'
+});
+const SPR = {
+  stand: [
+    '......##hhhh##........',
+    '....##hhhhhhhh##......',
+    '...#hhihhhhhhhhh#.....',
+    '..#hhiihhhhhhhhhh#....',
+    '..#hhihhhhhhhhhhh#....',
+    '.#hhhhhhhhhhhhhhhh#...',
+    '.#hHgggggggggggggH#...',
+    '.#hGllLlgggllLlgGH#...',
+    '.#hGllllgggllllgGH#...',
+    '.#hHffffffffffffhH#...',
+    '..#ffffffffffffff#....',
+    '..#fexffffffffxef#....',
+    '..#feeffffffffeef#....',
+    '..#ffffffFFffffff#....',
+    '..#ffffwwwwwwffff#....',
+    '...#ffffffffffff#.....',
+    '..##rrrrrrrrrrrr##....',
+    '.#qrrrrrrrrrrrrrr#....',
+    '.#KkTttttttRRTkK#.....',
+    '.#KkTtttttttRTkK#.....',
+    '.#KkTttttttttTkK#.....',
+    '..#fTttttttttTf#......',
+    '..#ddddddddddddd#.....',
+    '..#pppppppppppp#......',
+    '..#pppppPPppppp#......',
+    '..#pppp#..#pppp#......',
+    '..#pppP#..#Pppp#......',
+    '..#bbbb#..#bbbb#......',
+    '.#bbbbb#..#bbbbb#.....',
+    '.#BBBBB#..#BBBBB#.....'
+  ]
+};
+// run1 / run2：腿部從第 23 列起是左右鏡射對(用字串反轉互為鏡像,天生列長一致,
+// 不是靠事後裁切湊出來的)。第 22 列腰帶維持跟 stand 相同、不鏡射,避免腰帶跟上半身錯位。
+SPR.run1 = SPR.stand.slice(0, 22).concat([
+  '..#ddddddddddddd#.....',
+  '.#pppppP#...#PPppp#...',
+  '#ppppP#.......#Pppp#..',
+  'pppP#...........#bBb#.',
+  'bbb#..................',
+  '#bbbb#................',
+  '#bbbbb#...............',
+  '#BBBBB#...............'
+]);
+SPR.run2 = SPR.stand.slice(0, 22).concat([
+  '..#ddddddddddddd#.....',
+  '...#pppPP#...#Pppppp#.',
+  '..#pppP#.......#Ppppp#',
+  '.#bBb#...........#Pppp',
+  '..................#bbb',
+  '................#bbbb#',
+  '...............#bbbbb#',
+  '...............#BBBBB#'
+]);
+// fall：頭部(0-12 列)沿用 stand,從第 13 列起改成手臂大幅展開、圍巾往上飛、雙腳併攏直直落下。
+SPR.fall = SPR.stand.slice(0, 13).concat([
+  'q.#ffffffFFffffff#...q',
+  'rq.#ffffwwwwwwffff#.qr',
+  'rq.#ffffffffffffff#.qr',
+  '.Rq#rrrrrrrrrrrrrr#.qR',
+  'q#rrrrrrrrrrrrrrrrrr#q',
+  'Kk#TTTtttttRRTttt#kK..',
+  'kK#TttttttttttTtt#Kk..',
+  '..#fTttttttttTf#......',
+  '...#ddddddddddd#......',
+  '....#pppppppppp#......',
+  '.....#ppPPpppp#.......',
+  '.....#pppPPppp#.......',
+  '.....#pppppppp#.......',
+  '.....#bbbbbbbb#.......',
+  '....#bbbbbbbbbb#......',
+  '....#BBBBBBBBBB#......',
+  '....#BBBBBBBBBB#......'
+]);
+let ctx; // drawSprite 沿用 index.html 的寫法，繪製前由呼叫端指定目前作用中的 ctx
+function drawSprite(map, x, y, flip, scale){
+  const sc = scale || 2;
+  for(let r = 0; r < map.length; r++){
+    const row = map[r];
+    for(let c = 0; c < row.length; c++){
+      const ch = flip ? row[row.length - 1 - c] : row[c];
+      if(ch === '.') continue;
+      ctx.fillStyle = SPAL[ch];
+      ctx.fillRect(Math.round(x + c * sc), Math.round(y + r * sc), sc, sc);
+    }
+  }
+}
+// ==== 複製區段結束 ====
+
+const SCALE = 6;
+const SPR_W = 22, SPR_H = 30; // 所有姿勢陣列統一為 22 欄 x 30 列
+const PAD = 10;
+const CANVAS_W = SPR_W * SCALE + PAD * 2;
+const CANVAS_H = SPR_H * SCALE + PAD * 2;
+
+const poses = [
+  ['stand', SPR.stand],
+  ['run1', SPR.run1],
+  ['run2', SPR.run2],
+  ['fall', SPR.fall]
+];
+
+const poseRow = document.getElementById('poseRow');
+for(const [name, map] of poses){
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  const canvas = document.createElement('canvas');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = name;
+  cell.appendChild(canvas);
+  cell.appendChild(label);
+  poseRow.appendChild(cell);
+
+  ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#241c14';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  drawSprite(map, PAD, PAD, false, SCALE);
+}
+
+// ---- 自動循環播放 stand -> run1 -> run2 -> fall ----
+const cycleCanvas = document.getElementById('cycleCanvas');
+cycleCanvas.width = CANVAS_W;
+cycleCanvas.height = CANVAS_H;
+const cycleLabel = document.getElementById('cycleLabel');
+let cycleIdx = 0;
+function drawCycleFrame(){
+  const [name, map] = poses[cycleIdx];
+  ctx = cycleCanvas.getContext('2d');
+  ctx.fillStyle = '#241c14';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  drawSprite(map, PAD, PAD, false, SCALE);
+  cycleLabel.textContent = name;
+  cycleIdx = (cycleIdx + 1) % poses.length;
+}
+drawCycleFrame();
+setInterval(drawCycleFrame, 1000 / 8); // 約 8fps
+</script>
+</body>
+</html>

@@ -254,6 +254,48 @@ const SPR = {
     '.#BBBBB#..#BBBBB#.....'
   ]
 };
+// run1 / run2：腿部從第 23 列起是左右鏡射對(用字串反轉互為鏡像,天生列長一致,
+// 不是靠事後裁切湊出來的)。第 22 列腰帶維持跟 stand 相同、不鏡射,避免腰帶跟上半身錯位。
+SPR.run1 = SPR.stand.slice(0, 22).concat([
+  '..#ddddddddddddd#.....',
+  '.#pppppP#...#PPppp#...',
+  '#ppppP#.......#Pppp#..',
+  'pppP#...........#bBb#.',
+  'bbb#..................',
+  '#bbbb#................',
+  '#bbbbb#...............',
+  '#BBBBB#...............'
+]);
+SPR.run2 = SPR.stand.slice(0, 22).concat([
+  '..#ddddddddddddd#.....',
+  '...#pppPP#...#Pppppp#.',
+  '..#pppP#.......#Ppppp#',
+  '.#bBb#...........#Pppp',
+  '..................#bbb',
+  '................#bbbb#',
+  '...............#bbbbb#',
+  '...............#BBBBB#'
+]);
+// fall：頭部(0-12 列)沿用 stand,從第 13 列起改成手臂大幅展開、圍巾往上飛、雙腳併攏直直落下。
+SPR.fall = SPR.stand.slice(0, 13).concat([
+  'q.#ffffffFFffffff#...q',
+  'rq.#ffffwwwwwwffff#.qr',
+  'rq.#ffffffffffffff#.qr',
+  '.Rq#rrrrrrrrrrrrrr#.qR',
+  'q#rrrrrrrrrrrrrrrrrr#q',
+  'Kk#TTTtttttRRTttt#kK..',
+  'kK#TttttttttttTtt#Kk..',
+  '..#fTttttttttTf#......',
+  '...#ddddddddddd#......',
+  '....#pppppppppp#......',
+  '.....#ppPPpppp#.......',
+  '.....#pppPPppp#.......',
+  '.....#pppppppp#.......',
+  '.....#bbbbbbbb#.......',
+  '....#bbbbbbbbbb#......',
+  '....#BBBBBBBBBB#......',
+  '....#BBBBBBBBBB#......'
+]);
 function drawSprite(map, x, y, flip, scale){
   const sc = scale || 2;
   for(let r = 0; r < map.length; r++){
@@ -546,7 +588,10 @@ function drawCeiling(){
 }
 function drawPlayer(){
   if(player.inv > 0 && Math.floor(time * 14) % 2 === 0) return;
-  drawSprite(SPR.stand, player.x, player.y, player.face < 0, 2);
+  let map = SPR.stand;
+  if(!player.stand) map = SPR.fall;
+  else if(player.moving) map = (Math.floor(player.animT / .12) % 2 === 0) ? SPR.run1 : SPR.run2;
+  drawSprite(map, player.x, player.y, player.face < 0, 2);
 }
 function drawHUD(){
   ctx.fillStyle = C().hud;
@@ -578,7 +623,7 @@ function centerText(txt, y, font, color){
 function drawMenu(){
   centerText('像 素 下 樓 梯', 150, 'bold 34px Consolas,monospace', C().gold);
   centerText('─ 往下跳，越深越高分 ─', 182, 'bold 13px Consolas,monospace', C().dim);
-  drawSprite(SPR.stand, W/2 - 22, 230, false, 4);
+  drawSprite(SPR.run1, W/2 - 22, 230, false, 4);
   const lines = [
     ['電腦', '← → 方向鍵移動'],
     ['手機', '按住螢幕左右兩側'],
