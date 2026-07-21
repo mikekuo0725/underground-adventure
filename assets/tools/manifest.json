@@ -3,5 +3,10 @@
     "name": "cityBg",
     "src": "city/SHIPPING_DOCKS_AREA.png",
     "x": 64, "y": 768, "w": 768, "h": 288
+  },
+  {
+    "name": "cityWallTile",
+    "src": "city/CITY_MEGA.png",
+    "x": 1616, "y": 183, "w": 32, "h": 32
   }
 ]
