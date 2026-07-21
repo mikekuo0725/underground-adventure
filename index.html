@@ -180,11 +180,13 @@ function shouldSpawnFlyer(theme, dInLevel){
 
 // ---- 狀態 ----
 let state = 'menu';          // menu | play | over
-let plats = [], player = null;
+let plats = [], player = null, fliers = [];
 let scroll = 0, depth = 0, scrollSpeed = 55;
-let time = 0, overAt = 0, newBest = false;
-let best = 0;
+let time = 0, overAt = 0, newBest = false, newBestScore = false;
+let best = 0, bestScore = 0;
+let score = 0, coinsCollected = 0;
 try { best = +(localStorage.getItem('downstairs-best') || 0) || 0; } catch(e){}
+try { bestScore = +(localStorage.getItem('downstairs-best-score') || 0) || 0; } catch(e){}
 
 // ---- 音效（WebAudio 小方波，不需外部檔案）----
 let AC = null;
@@ -284,34 +286,37 @@ function drawSprite(map, x, y, flip, scale){
 }
 
 // ---- 平台 ----
-let lastWasSpike = false;
-function platType(){
-  const d = depth;
-  const spike  = Math.min(.04 + d * .0011, .22);
-  const conv   = Math.min(.05 + d * .0008, .16);
-  const spring = .07;
-  const r = Math.random();
-  if(r < spike) return 'spike';
-  if(r < spike + conv) return 'conv';
-  if(r < spike + conv + spring) return 'spring';
-  return 'norm';
-}
+let lastWasDanger = false;
 function spawn(y, forceNorm){
+  const theme = currentTheme();
+  const dInLevel = depthInLevel(depth, theme);
   const w = 50 + Math.random() * 85;
   const x = WALL + Math.random() * (W - 2 * WALL - w);
-  let t = forceNorm ? 'norm' : platType();
-  if(t === 'spike' && lastWasSpike) t = 'norm';   // 避免連續兩層尖刺
-  lastWasSpike = (t === 'spike');
-  // 愛心補血包：越深出現機率越高，只長在普通與輸送帶平台上
+  let category = 'norm', obstacleKey = null;
+  if (!forceNorm){
+    const pick = pickPlatformCategory(theme, dInLevel, lastWasDanger);
+    category = pick.category; obstacleKey = pick.obstacleKey;
+  }
+  lastWasDanger = (category === 'crumble' || category === 'cycleDanger');
   const heartChance = Math.min(.03 + depth * .0005, .14);
-  const heart = !forceNorm && (t === 'norm' || t === 'conv') && Math.random() < heartChance;
-  plats.push({ x, y, w, t, heart, dir: Math.random() < .5 ? -1 : 1, anim: Math.random() * 9, squash: 0 });
+  const heart = !forceNorm && category === 'norm' && Math.random() < heartChance;
+  const coinChance = Math.min(.10 + depth * .0006, .30);
+  const bigCoinChance = 0.02;
+  let coin = null;
+  if (!forceNorm && !heart && category !== 'flyer' && Math.random() < coinChance){
+    coin = Math.random() < bigCoinChance ? 'big' : 'small';
+  }
+  plats.push({
+    x, y, w, category, obstacleKey, heart, coin,
+    dir: Math.random() < .5 ? -1 : 1, anim: Math.random() * 9, squash: 0, crumbleT: -1
+  });
 }
 
 // ---- 初始化 ----
 function reset(){
   plats = []; scroll = 0; depth = 0; scrollSpeed = 55;
-  newBest = false; lastWasSpike = false;
+  newBest = false; lastWasDanger = false;
+  score = 0; coinsCollected = 0; newBestScore = false;
   player = { x: W/2 - PW/2, y: 0, vy: 0, face: 1, hp: MAX_HP,
              inv: 0, stand: null, animT: 0, moving: false };
   plats.push({ x: W/2 - 45, y: 190, w: 90, t: 'norm', dir: 1, anim: 0, squash: 0 });
@@ -341,10 +346,14 @@ function land(p){
 }
 function gameOver(){
   state = 'over'; overAt = time;
-  const score = Math.floor(depth);
-  if(score > best){
-    best = score; newBest = true;
+  const finalDepth = Math.floor(depth);
+  if (finalDepth > best){
+    best = finalDepth; newBest = true;
     try{ localStorage.setItem('downstairs-best', String(best)); }catch(e){}
+  }
+  if (score > bestScore){
+    bestScore = score; newBestScore = true;
+    try{ localStorage.setItem('downstairs-best-score', String(bestScore)); }catch(e){}
   }
   snd.over();
 }
@@ -355,7 +364,9 @@ function update(dt){
   scrollSpeed = Math.min(55 + depth * .62, 245);
   const sc = scrollSpeed * dt;
   scroll += sc;
+  const prevDepth = depth;
   depth = scroll / 28;
+  score += Math.floor(depth) - Math.floor(prevDepth) ? (Math.floor(depth) - Math.floor(prevDepth)) * 10 : 0;
 
   for(const p of plats){
     p.y -= sc;
@@ -410,6 +421,19 @@ function update(dt){
       p.heart = false;
       player.hp = Math.min(MAX_HP, player.hp + 2);
       snd.heal();
+    }
+  }
+
+  // 撿金幣
+  for (const p of plats){
+    if (!p.coin) continue;
+    const cx = p.x + p.w / 2, cy = p.y - 12 + Math.sin(p.anim * 2.4) * 2;
+    const r = p.coin === 'big' ? 7 : 5;
+    if (player.x < cx + r && player.x + PW > cx - r && player.y < cy + r && player.y + PH > cy - r){
+      score += p.coin === 'big' ? 500 : 100;
+      coinsCollected++;
+      p.coin = null;
+      snd.heal(); // 暫用既有音效,音效章節另外設計時再換專屬音色
     }
   }
 
@@ -516,6 +540,18 @@ function drawHeart(p){
     }
   }
 }
+function drawCoin(p){
+  const theme = currentTheme();
+  const cx = Math.round(p.x + p.w / 2), cy = Math.round(p.y - 12 + Math.sin(p.anim * 2.4) * 2);
+  const big = p.coin === 'big';
+  const r = big ? 7 : 5;
+  ctx.fillStyle = theme.coinPalette.lo;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  ctx.fillStyle = theme.coinPalette.body;
+  ctx.beginPath(); ctx.arc(cx, cy, r - 2, 0, 7); ctx.fill();
+  ctx.fillStyle = theme.coinPalette.hi;
+  ctx.beginPath(); ctx.arc(cx - r / 3, cy - r / 3, r / 3, 0, 7); ctx.fill();
+}
 function drawCeiling(){
   ctx.fillStyle = C.steelLo;
   ctx.fillRect(WALL, HUD_H, W - 2 * WALL, 4);
@@ -543,14 +579,14 @@ function drawHUD(){
     ctx.fillStyle = i < player.hp ? C.hpOn : C.hpOff;
     ctx.fillRect(8 + i * 10, 8, 7, 13);
   }
-  // 深度與最高分
+  // 分數與深度
   ctx.textAlign = 'right';
   ctx.fillStyle = C.gold;
   ctx.font = 'bold 15px Consolas,monospace';
-  ctx.fillText(Math.floor(depth) + ' m', W - 8, 15);
+  ctx.fillText(score + ' 分', W - 8, 15);
   ctx.fillStyle = C.dim;
   ctx.font = 'bold 10px Consolas,monospace';
-  ctx.fillText('最佳 ' + best + ' m', W - 8, 27);
+  ctx.fillText(Math.floor(depth) + 'm・最佳' + bestScore + '分', W - 8, 27);
   ctx.textAlign = 'left';
 }
 function centerText(txt, y, font, color){
@@ -605,6 +641,7 @@ function draw(){
   if(state === 'menu'){ drawMenu(); return; }
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
+  for(const p of plats) if(p.coin) drawCoin(p);
   drawPlayer();
   drawCeiling();
   drawHUD();
