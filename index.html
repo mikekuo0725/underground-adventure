@@ -33,18 +33,12 @@ function fit(){
 }
 addEventListener('resize', fit); fit();
 
-// ---- 調色盤（復古洞穴）----
-const C = {
-  bg:      '#241f35',
-  wall:    '#332a4a', wallSeam:'#241f35', wallHi:'#453a63',
-  hud:     '#141020', hudLine:'#3a3050',
-  text:    '#f4ead8', dim:'#8f86a8', gold:'#ffd75e', danger:'#e14b4b',
-  brick:   '#7a4a2e', brickHi:'#a86a3f', brickLo:'#4e2d1c',
-  steel:   '#cbd2e0', steelLo:'#5b6473',
-  belt:    '#8a6a1f', beltHi:'#e0b13e',
-  spring:  '#2f8f4a', springHi:'#6fe08a',
-  hpOn:    '#e14b4b', hpOff:'#3a2430'
-};
+// ---- 固定色(不隨主題變化,HUD/文字用) ----
+const FIXED_C = { hud: '#141020', hudLine: '#3a3050', text: '#f4ead8', dim: '#8f86a8', gold: '#ffd75e', danger: '#e14b4b', hpOn: '#e14b4b', hpOff: '#3a2430' };
+function C(){
+  const t = currentTheme();
+  return Object.assign({}, FIXED_C, t.colors);
+}
 
 // ---- 遊戲常數 ----
 const WALL = 14;             // 兩側牆寬
@@ -218,58 +212,46 @@ const snd = {
 };
 
 // ---- 角色像素圖（字元對應顏色，'.' 透明，繪製時放大 2 倍）----
-const SPAL = { h:'#6b4226', s:'#f2c79a', k:'#20242e', b:'#3f6fd8', B:'#2f55a8', d:'#2c3960', f:'#1d222e' };
+const COMMON_PAL = { f:'#f0c8a0', F:'#d4a87e', e:'#1d1610', x:'#ffffff', w:'#8a3c28' };
+const SPAL = Object.assign({}, COMMON_PAL, {
+  '#':'#2a1a10', h:'#6b4a2b', H:'#543a20', i:'#8a6538',
+  g:'#d9a441', G:'#a87828', l:'#7ecbe8', L:'#e8f8ff',
+  r:'#d43d2a', R:'#a02a1c', q:'#f06848',
+  t:'#c8a45a', T:'#a3843f', k:'#7a5c30', K:'#5c4322',
+  d:'#5a3d26', p:'#6e4f30', P:'#54391e', b:'#3a2718', B:'#241708'
+});
 const SPR = {
   stand: [
-    '...hhhhh...',
-    '..hhhhhhh..',
-    '..hsssssh..',
-    '..sksssks..',
-    '..sssssss..',
-    '...sssss...',
-    '..bbbbbbb..',
-    '.sbbbbbbbs.',
-    '.sbbbBbbbs.',
-    '..bbbbbbb..',
-    '..ddddddd..',
-    '...dd.dd...',
-    '...dd.dd...',
-    '...dd.dd...',
-    '..ff...ff..'
-  ],
-  run: [
-    '...hhhhh...',
-    '..hhhhhhh..',
-    '..hsssssh..',
-    '..sksssks..',
-    '..sssssss..',
-    '...sssss...',
-    '..bbbbbbb..',
-    '.sbbbbbbbs.',
-    '.sbbbBbbbs.',
-    '..bbbbbbb..',
-    '..ddddddd..',
-    '..dd...dd..',
-    '.dd.....dd.',
-    '.dd.....dd.',
-    '.ff.....ff.'
-  ],
-  fall: [
-    '.s.hhhhh.s.',
-    '.shhhhhhhs.',
-    '.shssssshs.',
-    '..sksssks..',
-    '..sssssss..',
-    '...sssss...',
-    '..bbbbbbb..',
-    '.bbbbbbbbb.',
-    '..bbbBbbb..',
-    '..bbbbbbb..',
-    '..ddddddd..',
-    '..dd...dd..',
-    '..dd...dd..',
-    '.dd.....dd.',
-    '.ff.....ff.'
+    '......##hhhh##........',
+    '....##hhhhhhhh##......',
+    '...#hhihhhhhhhhh#.....',
+    '..#hhiihhhhhhhhhh#....',
+    '..#hhihhhhhhhhhhh#....',
+    '.#hhhhhhhhhhhhhhhh#...',
+    '.#hHgggggggggggggH#...',
+    '.#hGllLlgggllLlgGH#...',
+    '.#hGllllgggllllgGH#...',
+    '.#hHffffffffffffhH#...',
+    '..#ffffffffffffff#....',
+    '..#fexffffffffxef#....',
+    '..#feeffffffffeef#....',
+    '..#ffffffFFffffff#....',
+    '..#ffffwwwwwwffff#....',
+    '...#ffffffffffff#.....',
+    '..##rrrrrrrrrrrr##....',
+    '.#qrrrrrrrrrrrrrr#....',
+    '.#KkTttttttRRTkK#.....',
+    '.#KkTtttttttRTkK#.....',
+    '.#KkTttttttttTkK#.....',
+    '..#fTttttttttTf#......',
+    '..#ddddddddddddd#.....',
+    '..#pppppppppppp#......',
+    '..#pppppPPppppp#......',
+    '..#pppp#..#pppp#......',
+    '..#pppP#..#Pppp#......',
+    '..#bbbb#..#bbbb#......',
+    '.#bbbbb#..#bbbbb#.....',
+    '.#BBBBB#..#BBBBB#.....'
   ]
 };
 function drawSprite(map, x, y, flip, scale){
@@ -456,31 +438,31 @@ function update(dt){
 
 // ---- 繪製 ----
 function drawWalls(){
-  ctx.fillStyle = C.wall;
+  ctx.fillStyle = C().wall;
   ctx.fillRect(0, 0, WALL, H);
   ctx.fillRect(W - WALL, 0, WALL, H);
   const off = 16 - (scroll % 16);
-  ctx.fillStyle = C.wallSeam;
+  ctx.fillStyle = C().wallSeam;
   for(let y = off - 16; y < H; y += 16){
     ctx.fillRect(0, Math.round(y), WALL, 2);
     ctx.fillRect(W - WALL, Math.round(y + 8), WALL, 2);
   }
-  ctx.fillStyle = C.wallHi;
+  ctx.fillStyle = C().wallHi;
   ctx.fillRect(WALL - 2, 0, 2, H);
   ctx.fillRect(W - WALL, 0, 2, H);
 }
 function drawPlat(p){
   const x = Math.round(p.x), y = Math.round(p.y), w = Math.round(p.w);
   if(p.t === 'spike'){
-    ctx.fillStyle = C.steelLo;
+    ctx.fillStyle = C().steelLo;
     ctx.fillRect(x, y + 6, w, PLAT_H - 6);
-    ctx.fillStyle = C.steel;
+    ctx.fillStyle = C().steel;
     for(let sx = x; sx + 10 <= x + w; sx += 10){
       ctx.beginPath();
       ctx.moveTo(sx + 1, y + 6); ctx.lineTo(sx + 5, y); ctx.lineTo(sx + 9, y + 6);
       ctx.closePath(); ctx.fill();
     }
-    ctx.fillStyle = C.danger;
+    ctx.fillStyle = C().danger;
     ctx.fillRect(x, y + 6, w, 2);
     return;
   }
@@ -512,11 +494,11 @@ function drawPlat(p){
     return;
   }
   // 普通磚塊平台
-  ctx.fillStyle = C.brick;
+  ctx.fillStyle = C().plat;
   ctx.fillRect(x, y, w, PLAT_H);
-  ctx.fillStyle = C.brickHi;
+  ctx.fillStyle = C().platHi;
   ctx.fillRect(x, y, w, 3);
-  ctx.fillStyle = C.brickLo;
+  ctx.fillStyle = C().platLo;
   ctx.fillRect(x, y + PLAT_H - 2, w, 2);
   for(let sx = x + 12; sx < x + w - 3; sx += 16) ctx.fillRect(sx, y + 3, 2, PLAT_H - 5);
 }
@@ -553,9 +535,9 @@ function drawCoin(p){
   ctx.beginPath(); ctx.arc(cx - r / 3, cy - r / 3, r / 3, 0, 7); ctx.fill();
 }
 function drawCeiling(){
-  ctx.fillStyle = C.steelLo;
+  ctx.fillStyle = C().steelLo;
   ctx.fillRect(WALL, HUD_H, W - 2 * WALL, 4);
-  ctx.fillStyle = C.steel;
+  ctx.fillStyle = C().steel;
   for(let sx = WALL; sx + 12 <= W - WALL + 11; sx += 12){
     ctx.beginPath();
     ctx.moveTo(sx, HUD_H + 4); ctx.lineTo(Math.min(sx + 6, W - WALL), HUD_H + 14); ctx.lineTo(Math.min(sx + 12, W - WALL), HUD_H + 4);
@@ -564,27 +546,24 @@ function drawCeiling(){
 }
 function drawPlayer(){
   if(player.inv > 0 && Math.floor(time * 14) % 2 === 0) return;
-  let map = SPR.stand;
-  if(!player.stand) map = SPR.fall;
-  else if(player.moving) map = (Math.floor(player.animT / .12) % 2 === 0) ? SPR.run : SPR.stand;
-  drawSprite(map, player.x, player.y, player.face < 0, 2);
+  drawSprite(SPR.stand, player.x, player.y, player.face < 0, 2);
 }
 function drawHUD(){
-  ctx.fillStyle = C.hud;
+  ctx.fillStyle = C().hud;
   ctx.fillRect(0, 0, W, HUD_H);
-  ctx.fillStyle = C.hudLine;
+  ctx.fillStyle = C().hudLine;
   ctx.fillRect(0, HUD_H - 2, W, 2);
   // 血量格
   for(let i = 0; i < MAX_HP; i++){
-    ctx.fillStyle = i < player.hp ? C.hpOn : C.hpOff;
+    ctx.fillStyle = i < player.hp ? C().hpOn : C().hpOff;
     ctx.fillRect(8 + i * 10, 8, 7, 13);
   }
   // 分數與深度
   ctx.textAlign = 'right';
-  ctx.fillStyle = C.gold;
+  ctx.fillStyle = C().gold;
   ctx.font = 'bold 15px Consolas,monospace';
   ctx.fillText(score + ' 分', W - 8, 15);
-  ctx.fillStyle = C.dim;
+  ctx.fillStyle = C().dim;
   ctx.font = 'bold 10px Consolas,monospace';
   ctx.fillText(Math.floor(depth) + 'm・最佳' + bestScore + '分', W - 8, 27);
   ctx.textAlign = 'left';
@@ -597,9 +576,9 @@ function centerText(txt, y, font, color){
   ctx.textAlign = 'left';
 }
 function drawMenu(){
-  centerText('像 素 下 樓 梯', 150, 'bold 34px Consolas,monospace', C.gold);
-  centerText('─ 往下跳，越深越高分 ─', 182, 'bold 13px Consolas,monospace', C.dim);
-  drawSprite(SPR.run, W/2 - 22, 230, false, 4);
+  centerText('像 素 下 樓 梯', 150, 'bold 34px Consolas,monospace', C().gold);
+  centerText('─ 往下跳，越深越高分 ─', 182, 'bold 13px Consolas,monospace', C().dim);
+  drawSprite(SPR.stand, W/2 - 22, 230, false, 4);
   const lines = [
     ['電腦', '← → 方向鍵移動'],
     ['手機', '按住螢幕左右兩側'],
@@ -611,31 +590,31 @@ function drawMenu(){
   let y = 340;
   ctx.font = 'bold 13px Consolas,monospace';
   for(const [a, b] of lines){
-    ctx.textAlign = 'right'; ctx.fillStyle = C.gold;
+    ctx.textAlign = 'right'; ctx.fillStyle = C().gold;
     ctx.fillText(a, W/2 - 10, y);
-    ctx.textAlign = 'left'; ctx.fillStyle = C.text;
+    ctx.textAlign = 'left'; ctx.fillStyle = C().text;
     ctx.fillText(b, W/2 + 2, y);
     y += 24;
   }
-  if(best > 0) centerText('最高紀錄 ' + best + ' m', y + 18, 'bold 14px Consolas,monospace', C.dim);
+  if(best > 0) centerText('最高紀錄 ' + best + ' m', y + 18, 'bold 14px Consolas,monospace', C().dim);
   if(Math.floor(time * 2) % 2 === 0)
-    centerText('點擊螢幕或按任意鍵開始', 570, 'bold 15px Consolas,monospace', C.text);
+    centerText('點擊螢幕或按任意鍵開始', 570, 'bold 15px Consolas,monospace', C().text);
 }
 function drawOver(){
   ctx.fillStyle = 'rgba(10,8,16,.74)';
   ctx.fillRect(0, 0, W, H);
-  centerText('遊 戲 結 束', 230, 'bold 32px Consolas,monospace', C.danger);
-  centerText('本次深度', 290, 'bold 14px Consolas,monospace', C.dim);
-  centerText(Math.floor(depth) + ' m', 330, 'bold 34px Consolas,monospace', C.gold);
+  centerText('遊 戲 結 束', 230, 'bold 32px Consolas,monospace', C().danger);
+  centerText('本次深度', 290, 'bold 14px Consolas,monospace', C().dim);
+  centerText(Math.floor(depth) + ' m', 330, 'bold 34px Consolas,monospace', C().gold);
   if(newBest && Math.floor(time * 3) % 2 === 0)
-    centerText('★ 新紀錄！', 365, 'bold 16px Consolas,monospace', C.gold);
+    centerText('★ 新紀錄！', 365, 'bold 16px Consolas,monospace', C().gold);
   else if(!newBest)
-    centerText('最高紀錄 ' + best + ' m', 365, 'bold 13px Consolas,monospace', C.dim);
+    centerText('最高紀錄 ' + best + ' m', 365, 'bold 13px Consolas,monospace', C().dim);
   if(time - overAt > .7 && Math.floor(time * 2) % 2 === 0)
-    centerText('點擊螢幕或按任意鍵再玩一次', 440, 'bold 14px Consolas,monospace', C.text);
+    centerText('點擊螢幕或按任意鍵再玩一次', 440, 'bold 14px Consolas,monospace', C().text);
 }
 function draw(){
-  ctx.fillStyle = C.bg;
+  ctx.fillStyle = C().bg;
   ctx.fillRect(0, 0, W, H);
   drawWalls();
   if(state === 'menu'){ drawMenu(); return; }
