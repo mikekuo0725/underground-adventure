@@ -198,6 +198,7 @@ let scroll = 0, depth = 0, scrollSpeed = 55;
 let time = 0, overAt = 0, newBest = false, newBestScore = false;
 let best = 0, bestScore = 0;
 let score = 0, coinsCollected = 0;
+let lastThemeIndex = 0, bannerT = 0;
 try { best = +(localStorage.getItem('downstairs-best') || 0) || 0; } catch(e){}
 try { bestScore = +(localStorage.getItem('downstairs-best-score') || 0) || 0; } catch(e){}
 
@@ -333,6 +334,8 @@ let lastWasDanger = false;
 function spawn(y, forceNorm){
   const theme = currentTheme();
   const dInLevel = depthInLevel(depth, theme);
+  const nearBoundary = dInLevel < 8 || dInLevel > 92;
+  forceNorm = forceNorm || nearBoundary;
   const w = 50 + Math.random() * 85;
   const x = WALL + Math.random() * (W - 2 * WALL - w);
   let category = 'norm', obstacleKey = null;
@@ -368,6 +371,7 @@ function reset(){
   plats = []; fliers = []; scroll = 0; depth = 0; scrollSpeed = 55;
   newBest = false; lastWasDanger = false;
   score = 0; coinsCollected = 0; newBestScore = false;
+  lastThemeIndex = 0; bannerT = 0;
   player = { x: W/2 - PW/2, y: 0, vy: 0, face: 1, hp: MAX_HP,
              inv: 0, stand: null, animT: 0, moving: false };
   plats.push({ x: W/2 - 45, y: 190, w: 90, category: 'norm', obstacleKey: null, heart: false, coin: null,
@@ -436,6 +440,14 @@ function update(dt){
   const prevDepth = depth;
   depth = scroll / 28;
   score += Math.floor(depth) - Math.floor(prevDepth) ? (Math.floor(depth) - Math.floor(prevDepth)) * 10 : 0;
+
+  const themeIdx = themeIndexForDepth(depth);
+  if (themeIdx !== lastThemeIndex){
+    lastThemeIndex = themeIdx;
+    bannerT = 2.5;
+    snd.start();
+  }
+  if (bannerT > 0) bannerT -= dt;
 
   for(const p of plats){
     p.y -= sc;
@@ -841,16 +853,19 @@ function centerText(txt, y, font, color){
   ctx.textAlign = 'left';
 }
 function drawMenu(){
-  centerText('像 素 下 樓 梯', 150, 'bold 34px Consolas,monospace', C().gold);
-  centerText('─ 往下跳，越深越高分 ─', 182, 'bold 13px Consolas,monospace', C().dim);
-  drawSprite(SPR.run1, W/2 - 22, 230, false, 4);
+  ctx.fillStyle = 'rgba(10,8,16,0.45)';
+  ctx.fillRect(0, 118, W, 96);
+  ctx.fillRect(0, 300, W, 300);
+  centerText('地 心 大 冒 險', 150, 'bold 30px Consolas,monospace', C().gold);
+  centerText('─ 五大關卡，一路往下闖 ─', 182, 'bold 13px Consolas,monospace', C().dim);
+  drawSprite(SPR.stand, W/2 - 22, 230, false, 4);
   const lines = [
     ['電腦', '← → 方向鍵移動'],
     ['手機', '按住螢幕左右兩側'],
-    ['尖刺 / 天花板', '碰到扣 2 格血'],
-    ['愛心', '撿到回 2 格血'],
-    ['彈簧平台', '把你往上彈'],
-    ['輸送帶', '會把你往旁邊帶']
+    ['危險平台', '碰到扣 2 格血，注意警告色'],
+    ['碎裂平台', '踩久了會碎，快步通過'],
+    ['金幣', '撿到加分，大金幣加更多'],
+    ['愛心', '撿到回 2 格血']
   ];
   let y = 340;
   ctx.font = 'bold 13px Consolas,monospace';
@@ -861,22 +876,23 @@ function drawMenu(){
     ctx.fillText(b, W/2 + 2, y);
     y += 24;
   }
-  if(best > 0) centerText('最高紀錄 ' + best + ' m', y + 18, 'bold 14px Consolas,monospace', C().dim);
+  if(bestScore > 0) centerText('最高分數 ' + bestScore, y + 18, 'bold 14px Consolas,monospace', C().dim);
   if(Math.floor(time * 2) % 2 === 0)
     centerText('點擊螢幕或按任意鍵開始', 570, 'bold 15px Consolas,monospace', C().text);
 }
 function drawOver(){
   ctx.fillStyle = 'rgba(10,8,16,.74)';
   ctx.fillRect(0, 0, W, H);
-  centerText('遊 戲 結 束', 230, 'bold 32px Consolas,monospace', C().danger);
-  centerText('本次深度', 290, 'bold 14px Consolas,monospace', C().dim);
-  centerText(Math.floor(depth) + ' m', 330, 'bold 34px Consolas,monospace', C().gold);
-  if(newBest && Math.floor(time * 3) % 2 === 0)
+  centerText('遊 戲 結 束', 220, 'bold 30px Consolas,monospace', C().danger);
+  centerText('本次分數', 270, 'bold 14px Consolas,monospace', C().dim);
+  centerText(score + ' 分', 308, 'bold 32px Consolas,monospace', C().gold);
+  centerText('深度 ' + Math.floor(depth) + 'm・金幣 ' + coinsCollected, 336, 'bold 13px Consolas,monospace', C().dim);
+  if(newBestScore && Math.floor(time * 3) % 2 === 0)
     centerText('★ 新紀錄！', 365, 'bold 16px Consolas,monospace', C().gold);
-  else if(!newBest)
-    centerText('最高紀錄 ' + best + ' m', 365, 'bold 13px Consolas,monospace', C().dim);
+  else if(!newBestScore)
+    centerText('最高分數 ' + bestScore, 365, 'bold 13px Consolas,monospace', C().dim);
   if(time - overAt > .7 && Math.floor(time * 2) % 2 === 0)
-    centerText('點擊螢幕或按任意鍵再玩一次', 440, 'bold 14px Consolas,monospace', C().text);
+    centerText('點擊螢幕或按任意鍵再玩一次', 430, 'bold 14px Consolas,monospace', C().text);
 }
 function draw(){
   drawWalls();
@@ -890,6 +906,15 @@ function draw(){
   drawPlayer();
   drawCeiling();
   drawHUD();
+  if (bannerT > 0 && state === 'play'){
+    const theme = THEMES[lastThemeIndex];
+    const alpha = Math.min(1, bannerT / 0.5, (2.5 - bannerT) > 2 ? 1 : (2.5 - bannerT) / 0.5);
+    ctx.fillStyle = `rgba(20,16,32,${0.6 * Math.min(1, alpha + 0.3)})`;
+    ctx.fillRect(0, 280, W, 60);
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    centerText(theme.banner, 316, 'bold 24px Consolas,monospace', C().gold);
+    ctx.globalAlpha = 1;
+  }
   if(state === 'over') drawOver();
 }
 
