@@ -8,5 +8,20 @@
     "name": "cityWallTile",
     "src": "city/CITY_MEGA.png",
     "x": 1616, "y": 183, "w": 32, "h": 32
+  },
+  {
+    "name": "jungleBg",
+    "src": "jungle/bg-layer-4-full.png",
+    "x": 0, "y": 0, "w": 288, "h": 288
+  },
+  {
+    "name": "jungleWallTile",
+    "src": "jungle/fgtiles-alpha.png",
+    "x": 0, "y": 150, "w": 64, "h": 64
+  },
+  {
+    "name": "jungleBgMid",
+    "src": "jungle/bg-layer-3-full-alpha.png",
+    "x": 0, "y": 0, "w": 576, "h": 576
   }
 ]
