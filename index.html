@@ -647,6 +647,38 @@ function drawCityAmbience(dt){
     if (blimp.x > W + 100) blimp.active = false;
   }
 }
+let fireflies = null, leaves = null;
+function initJungleAmbience(){
+  fireflies = [];
+  for (let i = 0; i < 5; i++) fireflies.push({ x: Math.random() * W, y: 100 + Math.random() * 400, t: Math.random() * 10 });
+  leaves = [];
+  for (let i = 0; i < 4; i++) leaves.push({ x: Math.random() * W, y: Math.random() * H, rot: 0, speed: 15 + Math.random() * 10 });
+}
+function drawJungleAmbience(dt){
+  if (!fireflies) initJungleAmbience();
+  for (const f of fireflies){
+    f.t += dt;
+    f.x += Math.sin(f.t * 0.8) * 6 * dt;
+    f.y += Math.cos(f.t * 0.6) * 4 * dt;
+    const glow = (Math.sin(f.t * 3) + 1) / 2;
+    ctx.fillStyle = `rgba(220,255,150,${0.2 + glow * 0.6})`;
+    ctx.beginPath(); ctx.arc(f.x, f.y, 2 + glow, 0, 7); ctx.fill();
+  }
+  for (const l of leaves){
+    l.y += l.speed * dt;
+    l.rot += dt * 2;
+    l.x += Math.sin(l.rot) * 10 * dt;
+    if (l.y > H) { l.y = -10; l.x = Math.random() * W; }
+    ctx.save();
+    ctx.translate(l.x, l.y);
+    ctx.rotate(l.rot);
+    ctx.fillStyle = Math.floor(l.rot) % 2 === 0 ? '#4a7a3a' : '#6a3a7a';
+    ctx.fillRect(-3, -2, 6, 4);
+    ctx.restore();
+  }
+  ctx.fillStyle = 'rgba(20,30,25,0.15)';
+  ctx.fillRect(0, H - 60, W, 60);
+}
 function drawPlat(p){
   const x = Math.round(p.x), y = Math.round(p.y), w = Math.round(p.w);
   const theme = currentTheme();
@@ -849,6 +881,7 @@ function drawOver(){
 function draw(){
   drawWalls();
   if (state === 'play' && currentTheme().id === 'city') drawCityAmbience(1/120);
+  if (state === 'play' && currentTheme().id === 'jungle') drawJungleAmbience(1/120);
   if(state === 'menu'){ drawMenu(); return; }
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
