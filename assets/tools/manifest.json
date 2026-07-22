@@ -23,5 +23,25 @@
     "name": "jungleBgMid",
     "src": "jungle/bg-layer-3-full-alpha.png",
     "x": 0, "y": 0, "w": 576, "h": 576
+  },
+  {
+    "name": "jungleMushroom",
+    "src": "jungle/fgtiles-alpha.png",
+    "x": 196, "y": 558, "w": 46, "h": 38
+  },
+  {
+    "name": "jungleFlowerClosed",
+    "src": "jungle/fgtiles-alpha.png",
+    "x": 251, "y": 608, "w": 79, "h": 38
+  },
+  {
+    "name": "jungleFlowerOpen",
+    "src": "jungle/fgtiles-alpha.png",
+    "x": 249, "y": 656, "w": 121, "h": 44
+  },
+  {
+    "name": "jungleBranch",
+    "src": "jungle/fgtiles-alpha.png",
+    "x": 280, "y": 484, "w": 82, "h": 64
   }
 ]
