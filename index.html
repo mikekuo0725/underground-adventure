@@ -569,6 +569,56 @@ function drawWalls(){
   ctx.fillRect(WALL - 2, 0, 2, H);
   ctx.fillRect(W - WALL, 0, 2, H);
 }
+let clouds = null, plane = { x: -60, active: false, t: 0 }, birds = { x: -40, t: 0, active: false }, blimp = { x: -100, active: false, t: 0 };
+function initCityAmbience(){
+  clouds = [];
+  for (let i = 0; i < 6; i++) clouds.push({ x: Math.random() * W, y: 40 + Math.random() * 120, s: 0.5 + Math.random(), speed: 4 + Math.random() * 6 });
+}
+function drawCityAmbience(dt){
+  if (!clouds) initCityAmbience();
+  for (const c of clouds){
+    c.x -= c.speed * dt;
+    if (c.x < -40) c.x = W + 40;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, 18 * c.s, 8 * c.s, 0, 0, 7);
+    ctx.ellipse(c.x + 14 * c.s, c.y + 2, 12 * c.s, 6 * c.s, 0, 0, 7);
+    ctx.fill();
+  }
+  plane.t += dt;
+  if (!plane.active && plane.t > 8 + Math.random() * 6){ plane.active = true; plane.x = -60; plane.t = 0; }
+  if (plane.active){
+    plane.x += 70 * dt;
+    ctx.fillStyle = '#e8e8e8';
+    ctx.fillRect(plane.x, 60, 10, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillRect(plane.x - 30, 61, 30, 1);
+    if (plane.x > W + 40) plane.active = false;
+  }
+  birds.t += dt;
+  if (!birds.active && birds.t > 10 + Math.random() * 8){ birds.active = true; birds.x = -40; birds.t = 0; }
+  if (birds.active){
+    birds.x += 50 * dt;
+    ctx.fillStyle = 'rgba(60,60,60,0.7)';
+    for (let i = 0; i < 4; i++) ctx.fillRect(birds.x + i * 10, 100 + Math.sin(time * 6 + i) * 4, 3, 1);
+    if (birds.x > W + 40) birds.active = false;
+  }
+  blimp.t += dt;
+  if (!blimp.active && blimp.t > 25 + Math.random() * 15){ blimp.active = true; blimp.x = -100; blimp.t = 0; }
+  if (blimp.active){
+    blimp.x += 20 * dt;
+    ctx.fillStyle = '#d4d4d4';
+    ctx.beginPath(); ctx.ellipse(blimp.x, 150, 30, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(20,16,32,0.8)';
+    ctx.fillRect(blimp.x - 20, 165, 60, 14);
+    ctx.fillStyle = '#ffd75e';
+    ctx.font = 'bold 9px Consolas,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('地心大冒險', blimp.x + 10, 175);
+    ctx.textAlign = 'left';
+    if (blimp.x > W + 100) blimp.active = false;
+  }
+}
 function drawPlat(p){
   const x = Math.round(p.x), y = Math.round(p.y), w = Math.round(p.w);
   if (p.category === 'crumble'){
@@ -749,6 +799,7 @@ function drawOver(){
 }
 function draw(){
   drawWalls();
+  if (state === 'play' && currentTheme().id === 'city') drawCityAmbience(1/120);
   if(state === 'menu'){ drawMenu(); return; }
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
