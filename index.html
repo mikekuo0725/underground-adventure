@@ -159,6 +159,28 @@ const THEMES = [
     ],
     coinPalette: { body: '#7ed8ff', hi: '#e0f8ff', lo: '#2a8ab8' },
     ceilingStyle: 'icicles'
+  },
+  {
+    id: 'lava', name: '熔火地心', banner: '🔥 熔火地心',
+    startDepth: 400, endDepth: 500, isFinal: true,
+    scrollSpeed: [195, 245], dangerProb: [0.36, 0.46],
+    meltAll: true, meltSeconds: 1.5,
+    colors: {
+      bg: '#1a0e0a', wall: '#3a2418', wallSeam: '#241408', wallHi: '#e86a2a',
+      hud: '#141020', hudLine: '#3a3050',
+      text: '#f4ead8', dim: '#8f86a8', gold: '#ffb347', danger: '#ff4e30',
+      plat: '#4a2818', platHi: '#e86a2a', platLo: '#241408',
+      steel: '#5a2e1a', steelLo: '#241408', hpOn: '#e14b4b', hpOff: '#3a2430'
+    },
+    obstacles: [
+      { key: 'lavaVent', category: 'cycleDanger', cycleSafe: 1.1, cycleWarn: 0.3, cycleDanger: 0.5 },
+      { key: 'lavaDrip', category: 'faller' },
+      { key: 'fireSprite', category: 'flyer', speedMin: 50, speedMax: 90 },
+      { key: 'driftSlab', category: 'moving' },
+      { key: 'steamVent', category: 'bounce' }
+    ],
+    coinPalette: { body: '#ffb347', hi: '#ffe0a0', lo: '#a85a1e' },
+    ceilingStyle: 'obsidian'
   }
 ];
 
@@ -232,13 +254,15 @@ function unlockedFallerKinds(theme, dInLevel){
 
 // ---- THEMES 自我檢查(開發用,確認後可保留,不影響正式邏輯) ----
 (function selfTestThemes(){
-  console.assert(THEMES.length === 4, 'THEMES 應有 4 筆');
+  console.assert(THEMES.length === 5, 'THEMES 應有 5 筆');
   console.assert(themeIndexForDepth(0) === 0, 'depth 0 應屬於第 0 關');
   console.assert(themeIndexForDepth(99) === 0, 'depth 99 應屬於第 0 關');
   console.assert(themeIndexForDepth(100) === 1, 'depth 100 應屬於第 1 關');
   console.assert(themeIndexForDepth(250) === 2, 'depth 250 應屬於第 2 關');
   console.assert(themeIndexForDepth(350) === 3, 'depth 350 應屬於第 3 關');
-  console.assert(themeIndexForDepth(450) === 3, 'depth 450 應夾在最後一關');
+  console.assert(themeIndexForDepth(450) === 4, 'depth 450 應屬於第 4 關(熔火地心)');
+  console.assert(themeIndexForDepth(550) === 4, 'depth 550 應夾在最後一關');
+  console.assert(THEMES[4].isFinal === true, '熔火地心應標記為最終關');
   const city = THEMES[0];
   console.assert(depthInLevel(50, city) === 50, 'depthInLevel 基本值');
   console.assert(depthInLevel(500, city) === 100, 'depthInLevel 應夾在關卡長度內');
@@ -262,6 +286,7 @@ let best = 0, bestScore = 0;
 let score = 0, coinsCollected = 0;
 let lastThemeIndex = 0, bannerT = 0;
 let fallerCooldown = 1.5;
+let altarSpawned = false, hasWon = false, winT = 0, victory = false;
 try { best = +(localStorage.getItem('downstairs-best') || 0) || 0; } catch(e){}
 try { bestScore = +(localStorage.getItem('downstairs-best-score') || 0) || 0; } catch(e){}
 
@@ -399,21 +424,28 @@ function spawn(y, forceNorm){
   const dInLevel = depthInLevel(depth, theme);
   const nearBoundary = dInLevel < 8 || dInLevel > 92;
   forceNorm = forceNorm || nearBoundary;
-  const w = 50 + Math.random() * 85;
-  const x = WALL + Math.random() * (W - 2 * WALL - w);
+  let w = 50 + Math.random() * 85;
+  const x0 = WALL + Math.random() * (W - 2 * WALL - w);
   let category = 'norm', obstacleKey = null;
   if (!forceNorm){
     const pick = pickPlatformCategory(theme, dInLevel, lastWasDanger);
     category = pick.category; obstacleKey = pick.obstacleKey;
   }
+  if (!forceNorm && category === 'norm' && theme.meltAll && Math.random() < 0.06) category = 'meltSlow';
   lastWasDanger = (category === 'crumble' || category === 'cycleDanger');
   const heartChance = Math.min(.03 + depth * .0005, .14);
-  const heart = !forceNorm && category === 'norm' && Math.random() < heartChance;
+  let heart = !forceNorm && category === 'norm' && Math.random() < heartChance;
   const coinChance = Math.min(.10 + depth * .0006, .30);
   const bigCoinChance = 0.02;
   let coin = null;
   if (!forceNorm && !heart && category !== 'flyer' && category !== 'portal' && Math.random() < coinChance){
     coin = Math.random() < bigCoinChance ? 'big' : 'small';
+  }
+  let x = x0;
+  if (theme.isFinal && !altarSpawned && dInLevel >= 96){
+    category = 'altar'; obstacleKey = null; heart = false; coin = null;
+    w = W - 2 * WALL - 20; x = WALL + 10;
+    altarSpawned = true;
   }
   plats.push({
     x, y, w, category, obstacleKey, heart, coin,
@@ -440,6 +472,7 @@ function reset(){
   newBest = false; lastWasDanger = false; fallerCooldown = 1.5;
   score = 0; coinsCollected = 0; newBestScore = false;
   lastThemeIndex = 0; bannerT = 0;
+  altarSpawned = false; hasWon = false; winT = 0; victory = false;
   player = { x: W/2 - PW/2, y: 0, vy: 0, vx: 0, face: 1, hp: MAX_HP,
              inv: 0, stand: null, animT: 0, moving: false };
   plats.push({ x: W/2 - 45, y: 190, w: 90, category: 'norm', obstacleKey: null, heart: false, coin: null,
@@ -465,7 +498,13 @@ function land(p){
     return;
   }
   player.stand = p; player.vy = 0; player.y = p.y - PH;
-  if (p.category === 'crumble' && p.crumbleT < 0) p.crumbleT = 0;
+  if (p.category === 'crumble' && p.crumbleT < 0){ p.crumbleT = 0; p.meltDur = 0.8; }
+  const theme = currentTheme();
+  if (theme.meltAll && (p.category === 'norm' || p.category === 'meltSlow' || p.category === 'moving') && p.crumbleT < 0){
+    p.crumbleT = 0;
+    p.meltDur = p.category === 'meltSlow' ? theme.meltSeconds + 1.0 : theme.meltSeconds;
+  }
+  if (p.category === 'altar' && !hasWon){ hasWon = true; winT = 0; }
   if (p.category === 'cycleDanger'){
     const cfg = obstacleConfig(p);
     p._lastPhase = cyclePhase(p, cfg);
@@ -498,10 +537,31 @@ function gameOver(){
   }
   snd.over();
 }
+function finishWin(){
+  victory = true;
+  score += player.hp * 500;
+  depth = THEMES[THEMES.length - 1].endDepth;
+  state = 'over'; overAt = time;
+  const finalDepth = Math.floor(depth);
+  if (finalDepth > best){
+    best = finalDepth; newBest = true;
+    try{ localStorage.setItem('downstairs-best', String(best)); }catch(e){}
+  }
+  if (score > bestScore){
+    bestScore = score; newBestScore = true;
+    try{ localStorage.setItem('downstairs-best-score', String(bestScore)); }catch(e){}
+  }
+  snd.start();
+}
 
 // ---- 更新 ----
 function update(dt){
   time += dt;
+  if (hasWon){
+    winT += dt;
+    if (winT > 2.5) finishWin();
+    return;
+  }
   scrollSpeed = Math.min(55 + depth * .62, 245);
   const sc = scrollSpeed * dt;
   scroll += sc;
@@ -521,9 +581,9 @@ function update(dt){
     p.y -= sc;
     p.anim += dt;
     if(p.squash > 0) p.squash -= dt;
-    if(p.category === 'crumble' && p.crumbleT >= 0){
+    if(p.crumbleT >= 0){
       p.crumbleT += dt;
-      if(p.crumbleT > 0.8 && player.stand === p){
+      if(p.crumbleT > p.meltDur && player.stand === p){
         player.stand = null; player.vy = 0;
       }
     }
@@ -693,7 +753,7 @@ function update(dt){
   if(player.y > H + 10){ gameOver(); return; }
 
   // 清除已碎裂完的平台、離開頂部的平台，往下補新平台
-  plats = plats.filter(p => !(p.category === 'crumble' && p.crumbleT >= 1.1));
+  plats = plats.filter(p => !(p.crumbleT >= 0 && p.crumbleT >= p.meltDur + 0.3));
   plats = plats.filter(p => p.y > -30);
   let lowest = 0;
   for(const p of plats) lowest = Math.max(lowest, p.y);
@@ -750,6 +810,26 @@ function drawWalls(){
     ctx.restore();
     ctx.fillStyle = 'rgba(14,26,42,0.45)';
     ctx.fillRect(0, 0, W, H);
+  } else if (theme.id === 'lava' && IMG.iceBg && IMG.iceBg.complete){
+    const img = IMG.iceBg;
+    const pat = ctx.createPattern(img, 'repeat');
+    ctx.save();
+    ctx.translate(-(scroll * 0.25 % img.width), -(scroll * 0.25 % img.height));
+    ctx.fillStyle = pat;
+    ctx.fillRect(0, 0, W + img.width, H + img.height);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(26,14,10,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'color';
+    ctx.fillStyle = '#c04a1e';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+    const glow = 0.5 + Math.sin(time * 2) * 0.15;
+    const grad = ctx.createLinearGradient(0, H - 120, 0, H);
+    grad.addColorStop(0, 'rgba(255,110,40,0)');
+    grad.addColorStop(1, `rgba(255,120,40,${0.45 * glow})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, H - 120, W, 120);
   } else {
     ctx.fillStyle = C().bg;
     ctx.fillRect(0, 0, W, H);
@@ -942,6 +1022,39 @@ function drawIceAmbience(dt){
   ctx.fillStyle = `rgba(255,200,120,${0.8 * flicker})`;
   ctx.fillRect(lantern.x - 2, lantern.y - 2, 4, 4);
 }
+let embers = null, obelisks = null;
+function initLavaAmbience(){
+  embers = [];
+  for (let i = 0; i < 14; i++) embers.push({ x: Math.random() * W, y: Math.random() * H, speed: 12 + Math.random() * 18, drift: Math.random() * 8, t: Math.random() * 10 });
+  obelisks = [];
+  for (let i = 0; i < 3; i++) obelisks.push({ x: 20 + Math.random() * (W - 100), y: 80 + i * 180 + Math.random() * 60, t: Math.random() * 10 });
+}
+function drawLavaAmbience(dt){
+  if (!embers) initLavaAmbience();
+  for (const o of obelisks){
+    o.t += dt;
+    const glow = 0.5 + Math.sin(o.t * 1.2) * 0.35;
+    if (IMG.iceCrystal && IMG.iceCrystal.complete){
+      ctx.globalAlpha = 0.5 + glow * 0.3;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(IMG.iceCrystal, o.x, o.y, 60, 48);
+      ctx.globalCompositeOperation = 'color';
+      ctx.fillStyle = '#e8622a';
+      ctx.fillRect(o.x, o.y, 60, 48);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+    }
+  }
+  for (const e of embers){
+    e.t += dt;
+    e.y -= e.speed * dt;
+    e.x += Math.sin(e.t * 1.5) * e.drift * dt;
+    if (e.y < -6){ e.y = H + 6; e.x = Math.random() * W; }
+    const flick = 0.5 + Math.sin(e.t * 8) * 0.4;
+    ctx.fillStyle = `rgba(255,${140 + Math.floor(flick * 80)},60,${0.6 + flick * 0.3})`;
+    ctx.fillRect(e.x, e.y, 2, 2);
+  }
+}
 function drawPlat(p){
   const x = Math.round(p.x), y = Math.round(p.y), w = Math.round(p.w);
   const theme = currentTheme();
@@ -1012,14 +1125,20 @@ function drawPlat(p){
     return;
   }
   if (p.category === 'moving'){
-    ctx.fillStyle = 'rgba(78,232,255,0.18)';
+    const accent = p.obstacleKey === 'driftSlab' ? '#ff8a3d' : '#4ee8ff';
+    ctx.fillStyle = p.obstacleKey === 'driftSlab' ? 'rgba(255,138,61,0.18)' : 'rgba(78,232,255,0.18)';
     ctx.fillRect(x - 2, y + PLAT_H, w + 4, 5);
     ctx.fillStyle = C().plat;
     ctx.fillRect(x, y, w, PLAT_H);
-    ctx.fillStyle = '#4ee8ff';
+    ctx.fillStyle = accent;
     ctx.fillRect(x, y, w, 2);
     ctx.fillStyle = C().platLo;
     ctx.fillRect(x, y + PLAT_H - 2, w, 2);
+    if (theme.meltAll && p.crumbleT >= 0){
+      const t = Math.min(1, p.crumbleT / p.meltDur);
+      ctx.fillStyle = `rgba(255,80,30,${0.15 + t * 0.55})`;
+      ctx.fillRect(x, y, w, PLAT_H);
+    }
     return;
   }
   if (p.category === 'portal'){
@@ -1058,12 +1177,46 @@ function drawPlat(p){
       ctx.drawImage(IMG.jungleMushroom, x, y + sq - 6, w, PLAT_H - sq + 6);
       return;
     }
+    if (theme.id === 'lava'){
+      ctx.fillStyle = '#3a2418';
+      ctx.fillRect(x, y + sq, w, PLAT_H - sq);
+      ctx.fillStyle = '#8a4a20';
+      ctx.fillRect(x, y + sq, w, 3);
+      const puff = p.squash > 0 ? 1 : 0.5 + Math.sin(p.anim * 6) * 0.3;
+      ctx.fillStyle = `rgba(255,200,140,${puff * 0.6})`;
+      for (let sx = x + 6; sx + 4 <= x + w - 6; sx += 14) ctx.fillRect(sx, y + sq - 6 - puff * 6, 4, 6 + puff * 6);
+      return;
+    }
     ctx.fillStyle = '#c9853a';
     ctx.fillRect(x, y + sq, w, PLAT_H - sq);
     ctx.fillStyle = '#e8b06a';
     ctx.fillRect(x, y + sq, w, 3);
     ctx.fillStyle = '#8a5a24';
     for (let sx = x + 4; sx + 6 <= x + w; sx += 10) ctx.fillRect(sx, y + sq + 5, 6, 2);
+    return;
+  }
+  if (p.category === 'altar'){
+    ctx.fillStyle = '#3a3020';
+    ctx.fillRect(x, y, w, PLAT_H + 2);
+    ctx.fillStyle = '#ffd77a';
+    ctx.fillRect(x, y, w, 3);
+    const glow = 0.5 + Math.sin(p.anim * 2) * 0.3;
+    ctx.fillStyle = `rgba(255,200,100,${glow})`;
+    for (let sx = x + 10; sx + 6 <= x + w - 10; sx += 26) ctx.fillRect(sx, y + 6, 6, 3);
+    return;
+  }
+  if (p.category === 'meltSlow'){
+    ctx.fillStyle = '#5a5040';
+    ctx.fillRect(x, y, w, PLAT_H);
+    ctx.fillStyle = '#8a7a58';
+    ctx.fillRect(x, y, w, 3);
+    ctx.fillStyle = 'rgba(255,180,90,0.5)';
+    for (let sx = x + 8; sx + 4 <= x + w - 8; sx += 18) ctx.fillRect(sx, y + 6, 4, 2);
+    if (p.crumbleT >= 0){
+      const t = Math.min(1, p.crumbleT / p.meltDur);
+      ctx.fillStyle = `rgba(255,90,40,${0.15 + t * 0.5})`;
+      ctx.fillRect(x, y, w, PLAT_H);
+    }
     return;
   }
   // 普通磚塊平台
@@ -1074,6 +1227,15 @@ function drawPlat(p){
   ctx.fillStyle = C().platLo;
   ctx.fillRect(x, y + PLAT_H - 2, w, 2);
   for(let sx = x + 12; sx < x + w - 3; sx += 16) ctx.fillRect(sx, y + 3, 2, PLAT_H - 5);
+  if (theme.meltAll && p.crumbleT >= 0){
+    const t = Math.min(1, p.crumbleT / p.meltDur);
+    ctx.fillStyle = `rgba(255,80,30,${0.15 + t * 0.55})`;
+    ctx.fillRect(x, y, w, PLAT_H);
+    if (t > 0.6){
+      ctx.fillStyle = `rgba(255,180,60,${(t - 0.6) * 1.6})`;
+      ctx.fillRect(x, y + PLAT_H - 3, w, 3);
+    }
+  }
 }
 function drawFlier(f){
   if (f.obstacleKey === 'cart'){
@@ -1105,6 +1267,14 @@ function drawFlier(f){
     ctx.fillStyle = 'rgba(90,170,255,0.35)';
     ctx.fillRect(x - 4, y - 4, 20, 20);
     ctx.globalCompositeOperation = 'source-over';
+    return;
+  }
+  if (f.obstacleKey === 'fireSprite'){
+    const flick = 0.6 + Math.sin(f.anim * 12) * 0.3;
+    ctx.fillStyle = `rgba(255,120,40,${flick})`;
+    ctx.beginPath(); ctx.arc(x + 6, y + 6, 6, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(255,210,110,${flick})`;
+    ctx.beginPath(); ctx.arc(x + 6, y + 6, 3, 0, 7); ctx.fill();
     return;
   }
   const flap = Math.floor(f.anim * 8) % 2;
@@ -1192,6 +1362,19 @@ function drawCeiling(){
     ctx.fillRect(WALL, HUD_H + 4, W - 2 * WALL, 1);
     return;
   }
+  if (style === 'obsidian'){
+    ctx.fillStyle = '#1a0e0a';
+    for(let sx = WALL; sx + 16 <= W - WALL + 15; sx += 16){
+      const len = 8 + (Math.floor(sx / 16) % 3) * 4;
+      ctx.beginPath();
+      ctx.moveTo(sx, HUD_H + 4); ctx.lineTo(Math.min(sx + 8, W - WALL), HUD_H + 4 + len); ctx.lineTo(Math.min(sx + 16, W - WALL), HUD_H + 4);
+      ctx.closePath(); ctx.fill();
+    }
+    const drip = 0.4 + Math.sin(time * 3) * 0.3;
+    ctx.fillStyle = `rgba(255,110,40,${drip})`;
+    for(let sx = WALL + 6; sx + 2 <= W - WALL; sx += 22) ctx.fillRect(sx, HUD_H + 4, 2, 6 + Math.sin(time * 2 + sx) * 3);
+    return;
+  }
   ctx.fillStyle = C().steel;
   for(let sx = WALL; sx + 12 <= W - WALL + 11; sx += 12){
     ctx.beginPath();
@@ -1264,8 +1447,13 @@ function drawMenu(){
 function drawOver(){
   ctx.fillStyle = 'rgba(10,8,16,.74)';
   ctx.fillRect(0, 0, W, H);
-  centerText('遊 戲 結 束', 220, 'bold 30px Consolas,monospace', C().danger);
-  centerText('本次分數', 270, 'bold 14px Consolas,monospace', C().dim);
+  if (victory){
+    centerText('★ 全 破 ！ ★', 220, 'bold 30px Consolas,monospace', '#ffd75e');
+    centerText('全破獎勵已加入分數', 270, 'bold 13px Consolas,monospace', C().dim);
+  } else {
+    centerText('遊 戲 結 束', 220, 'bold 30px Consolas,monospace', C().danger);
+    centerText('本次分數', 270, 'bold 14px Consolas,monospace', C().dim);
+  }
   centerText(score + ' 分', 308, 'bold 32px Consolas,monospace', C().gold);
   centerText('深度 ' + Math.floor(depth) + 'm・金幣 ' + coinsCollected, 336, 'bold 13px Consolas,monospace', C().dim);
   if(newBestScore && Math.floor(time * 3) % 2 === 0)
@@ -1281,6 +1469,7 @@ function draw(){
   if (state === 'play' && currentTheme().id === 'jungle') drawJungleAmbience(1/120);
   if (state === 'play' && currentTheme().id === 'scifi') drawScifiAmbience(1/120);
   if (state === 'play' && currentTheme().id === 'ice') drawIceAmbience(1/120);
+  if (state === 'play' && currentTheme().id === 'lava') drawLavaAmbience(1/120);
   if(state === 'menu'){ drawMenu(); return; }
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
@@ -1299,7 +1488,33 @@ function draw(){
     centerText(theme.banner, 316, 'bold 24px Consolas,monospace', C().gold);
     ctx.globalAlpha = 1;
   }
+  if (hasWon && state === 'play') drawWinCelebration();
   if(state === 'over') drawOver();
+}
+function drawWinCelebration(){
+  ctx.fillStyle = 'rgba(20,10,6,0.5)';
+  ctx.fillRect(0, 0, W, H);
+  const open = Math.min(1, winT / 0.8);
+  const cx = W / 2, cy = 260;
+  ctx.fillStyle = '#4a2e18';
+  ctx.fillRect(cx - 22, cy, 44, 24);
+  ctx.fillStyle = '#ffd75e';
+  ctx.fillRect(cx - 22, cy + 10, 44, 3);
+  ctx.save();
+  ctx.translate(cx - 22, cy);
+  ctx.rotate(-open * 0.9);
+  ctx.fillStyle = '#3a2412';
+  ctx.fillRect(0, -18, 44, 18);
+  ctx.restore();
+  if (open > 0.5){
+    const glow = 0.5 + Math.sin(time * 10) * 0.3;
+    ctx.fillStyle = `rgba(255,220,120,${glow})`;
+    ctx.beginPath(); ctx.arc(cx, cy - 6, 16 * open, 0, 7); ctx.fill();
+  }
+  if (winT > 0.9){
+    const bob = Math.sin(time * 4) * 4;
+    centerText('全 破 ！', 200 + bob, 'bold 34px Consolas,monospace', '#ffd75e');
+  }
 }
 
 // ---- 輸入 ----
