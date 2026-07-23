@@ -29,7 +29,7 @@
 - 角色是程式內定義的像素圖（字元陣列對應顏色），有站立／跑步／落下三種姿勢。
 
 ## 發布資訊
-- 遊戲網址:https://claude.ai/code/artifact/553e97f0-35b8-4c23-97a5-90cd29d741ac(私人網頁,可從頁面上的分享選單開放給別人玩)。
+- 遊戲網址:https://claude.ai/code/artifact/57e71736-6486-40ba-969b-5680bdd32691(私人網頁,可從頁面上的分享選單開放給別人玩;2026-07-23 舊連結失效後重發的新網址)。
 - 發布方式:Claude 的 Artifact(claude.ai 私人網頁),發布用的內容與 `index.html` 相同,只是去掉最外層的 `<!DOCTYPE html>`、`<html>`、`</html>` 三行(Artifact 會自己包)。
 - 更新流程:改完 `index.html` 後,請 Claude Code 重新發布到同一個 Artifact 網址即可。
 
