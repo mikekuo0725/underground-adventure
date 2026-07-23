@@ -25,13 +25,20 @@
 - 尖刺與輸送帶的出現機率隨深度上升（尖刺最高 22%、輸送帶最高 16%、彈簧固定 7%）。
 
 ## 技術說明
-- 全部程式都在 `index.html` 一個檔案裡：Canvas 繪圖（360x640 邏輯解析度、像素風縮放）、固定步長 120 Hz 物理更新、WebAudio 合成音效（無外部素材）。
+- 全部程式都在 `index.html` 一個檔案裡：Canvas 繪圖（360x640 邏輯解析度、像素風縮放）、固定步長 120 Hz 物理更新、WebAudio 合成音效與音樂（無外部素材）。
 - 角色是程式內定義的像素圖（字元陣列對應顏色），有站立／跑步／落下三種姿勢。
+
+## 全球排行榜(2026-07-23 新增)
+- 開場畫面每 7 秒在「封面」與「全球排行榜」之間輪播(街機 attract mode);任何時候點擊/觸控/按鍵都會直接開始遊戲。
+- 遊戲結束若擠進全球 TOP 10,會跳出街機式三字母代號輸入(上下鍵/點觸切字母),送出後顯示更新後的榜單並高亮新紀錄。
+- 後端:Cloudflare Worker + D1,程式碼在 `worker/` 資料夾(`wrangler deploy` 部署,API 網址寫死在 `index.html` 的 `API_URL` 常數)。
+- **Claude Artifact 版本連不到這個 API**(Artifact 的安全限制擋掉對外連線),該版本只會顯示本機最佳紀錄,遊戲本身仍可正常遊玩;Firebase Hosting 與 Cloudflare Pages 兩個真正的網站則可以正常使用全球榜。
 
 ## 發布資訊
 - 遊戲網址:https://claude.ai/code/artifact/57e71736-6486-40ba-969b-5680bdd32691(私人網頁,可從頁面上的分享選單開放給別人玩;2026-07-23 舊連結失效後重發的新網址)。
 - 發布方式:Claude 的 Artifact(claude.ai 私人網頁),發布用的內容與 `index.html` 相同,只是去掉最外層的 `<!DOCTYPE html>`、`<html>`、`</html>` 三行(Artifact 會自己包)。
 - 更新流程:改完 `index.html` 後,請 Claude Code 重新發布到同一個 Artifact 網址即可。
+- 另外部署在 Firebase Hosting(`mike-underground-adventure.web.app`)與 Cloudflare Pages(`underground-adventure.pages.dev`)。
 
 ## 待辦 / 點子(還沒做)
 - 加料版元素:道具(護盾、減速)、連擊加分、關卡變化。

@@ -1,2 +1,3 @@
 .firebase/
 .wrangler/
+worker/.wrangler/

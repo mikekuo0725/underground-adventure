@@ -298,6 +298,62 @@ let altarSpawned = false, hasWon = false, winT = 0, victory = false;
 try { best = +(localStorage.getItem('downstairs-best') || 0) || 0; } catch(e){}
 try { bestScore = +(localStorage.getItem('downstairs-best-score') || 0) || 0; } catch(e){}
 
+// ---- 全球排行榜(Cloudflare Worker + D1)----
+const API_URL = 'https://underground-adventure-api.mikekuo0725.workers.dev';
+let globalScores = [];
+let globalScoresLoaded = false;
+let globalScoresError = false;
+let nameEntry = null;       // null | {letters:['A','A','A'], col} | 'submitting'
+let justSubmittedRank = null;
+let showResultBoard = false;
+let submitFailedMsg = false;
+const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function fetchGlobalScores(){
+  fetch(API_URL + '/api/scores').then(r => {
+    if(!r.ok) throw new Error('bad status');
+    return r.json();
+  }).then(data => {
+    globalScores = Array.isArray(data.scores) ? data.scores : [];
+    globalScoresLoaded = true;
+  }).catch(() => { globalScoresError = true; });
+}
+function qualifiesForGlobal(){
+  if(globalScoresError) return false;
+  if(globalScores.length < 10) return true;
+  return score > globalScores[9].score;
+}
+function cycleLetter(delta){
+  if(!nameEntry || nameEntry === 'submitting') return;
+  const i = AZ.indexOf(nameEntry.letters[nameEntry.col]);
+  nameEntry.letters[nameEntry.col] = AZ[(i + delta + 26) % 26];
+}
+function moveCol(delta){
+  if(!nameEntry || nameEntry === 'submitting') return;
+  nameEntry.col = Math.max(0, Math.min(2, nameEntry.col + delta));
+}
+function submitNameEntry(){
+  if(!nameEntry || nameEntry === 'submitting') return;
+  const name = nameEntry.letters.join('');
+  const sScore = score, sDepth = Math.floor(depth);
+  nameEntry = 'submitting';
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000));
+  Promise.race([
+    fetch(API_URL + '/api/scores', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, score: sScore, depth: sDepth })
+    }).then(r => r.json()),
+    timeout
+  ]).then(data => {
+    if(data && data.scores){ globalScores = data.scores; globalScoresLoaded = true; }
+    justSubmittedRank = (data && data.rank) || null;
+    nameEntry = null;
+    showResultBoard = true;
+  }).catch(() => {
+    nameEntry = null;
+    submitFailedMsg = true;
+  });
+}
+
 // ---- 音效與音樂（WebAudio 合成，不需外部檔案）----
 let AC = null;
 let musicEnabled = true;
@@ -591,6 +647,7 @@ function reset(){
   score = 0; coinsCollected = 0; newBestScore = false;
   lastThemeIndex = 0; bannerT = 0;
   altarSpawned = false; hasWon = false; winT = 0; victory = false;
+  nameEntry = null; showResultBoard = false; justSubmittedRank = null; submitFailedMsg = false;
   player = { x: W/2 - PW/2, y: 0, vy: 0, vx: 0, face: 1, hp: MAX_HP,
              inv: 0, stand: null, animT: 0, moving: false };
   plats.push({ x: W/2 - 45, y: 190, w: 90, category: 'norm', obstacleKey: null, heart: false, coin: null,
@@ -655,6 +712,7 @@ function gameOver(){
   }
   snd.over();
   music.stop();
+  if (qualifiesForGlobal()) nameEntry = { letters: ['A','A','A'], col: 0 };
 }
 function finishWin(){
   victory = true;
@@ -672,6 +730,7 @@ function finishWin(){
   }
   snd.win();
   music.stop();
+  if (qualifiesForGlobal()) nameEntry = { letters: ['A','A','A'], col: 0 };
 }
 
 // ---- 更新 ----
@@ -1546,6 +1605,87 @@ function drawMenu(){
   if(Math.floor(time * 2) % 2 === 0)
     centerText('點擊螢幕或按任意鍵開始', 570, 'bold 15px Consolas,monospace', C().text);
 }
+function drawScoreRows(list, startY, rowH, font, dimFont){
+  list.forEach((s, i) => {
+    const rank = i + 1, y = startY + i * rowH;
+    const color = rank === 1 ? '#ffd75e' : rank === 2 ? '#d8dce8' : rank === 3 ? '#e8935a' : C().text;
+    if (justSubmittedRank === rank && Math.floor(time * 3) % 2 === 0){
+      ctx.fillStyle = 'rgba(255,215,94,0.22)';
+      ctx.fillRect(W/2 - 150, y - rowH * 0.65, 300, rowH - 2);
+    }
+    ctx.font = font;
+    ctx.textAlign = 'left'; ctx.fillStyle = color;
+    ctx.fillText(String(rank).padStart(2,'0') + ' ' + s.name, W/2 - 150, y);
+    ctx.textAlign = 'right';
+    if (dimFont){
+      ctx.fillText(s.score + ' 分', W/2 + 150, y);
+      ctx.font = dimFont; ctx.fillStyle = C().dim;
+      ctx.fillText(s.depth + 'm', W/2 + 150, y + 13);
+    } else {
+      ctx.fillText(s.score + '分・' + s.depth + 'm', W/2 + 150, y);
+    }
+  });
+  ctx.textAlign = 'left';
+}
+function drawLeaderboard(){
+  ctx.fillStyle = 'rgba(10,8,16,0.55)';
+  ctx.fillRect(0, 90, W, 510);
+  centerText('全 球 排 行 榜', 130, 'bold 26px Consolas,monospace', C().gold);
+  const list = globalScores.slice(0, 10);
+  if (globalScoresError){
+    centerText('目前無法連線全球榜', 320, 'bold 14px Consolas,monospace', C().dim);
+  } else if (!globalScoresLoaded){
+    centerText('讀取中...', 320, 'bold 14px Consolas,monospace', C().dim);
+  } else if (list.length === 0){
+    centerText('還沒有紀錄，來當第一名！', 320, 'bold 13px Consolas,monospace', C().dim);
+  } else {
+    drawScoreRows(list, 175, 32, 'bold 15px Consolas,monospace', '11px Consolas,monospace');
+  }
+  if(bestScore > 0) centerText('個人最佳 ' + bestScore, 545, 'bold 13px Consolas,monospace', C().dim);
+  if(Math.floor(time * 2) % 2 === 0)
+    centerText('點擊螢幕或按任意鍵開始', 585, 'bold 14px Consolas,monospace', C().text);
+}
+function drawMiniLeaderboard(startY){
+  centerText('全球排行榜', startY, 'bold 15px Consolas,monospace', C().gold);
+  const list = globalScores.slice(0, 10);
+  if (list.length === 0){
+    centerText('尚無資料', startY + 30, '11px Consolas,monospace', C().dim);
+  } else {
+    drawScoreRows(list, startY + 26, 16, 'bold 11px Consolas,monospace', null);
+  }
+}
+const NAME_BOX_W = 52, NAME_GAP = 16;
+const NAME_START_X = W/2 - (NAME_BOX_W * 3 + NAME_GAP * 2) / 2;
+const NAME_UP_Y = 425, NAME_LETTER_Y = 455, NAME_DOWN_Y = 485;
+const NAME_CONFIRM_BTN = { x: W/2 - 64, y: 505, w: 128, h: 32 };
+function nameColX(i){ return NAME_START_X + i * (NAME_BOX_W + NAME_GAP) + NAME_BOX_W / 2; }
+function drawNameEntryWidget(){
+  centerText('新紀錄！輸入代號', 390, 'bold 15px Consolas,monospace', C().gold);
+  for(let i = 0; i < 3; i++){
+    const cx = nameColX(i);
+    const sel = nameEntry.col === i;
+    ctx.fillStyle = sel ? C().gold : C().dim;
+    ctx.beginPath();
+    ctx.moveTo(cx, NAME_UP_Y - 7); ctx.lineTo(cx - 8, NAME_UP_Y + 7); ctx.lineTo(cx + 8, NAME_UP_Y + 7);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = sel ? 'rgba(255,215,94,0.18)' : 'rgba(255,255,255,0.06)';
+    ctx.fillRect(cx - NAME_BOX_W/2, NAME_LETTER_Y - 22, NAME_BOX_W, 44);
+    ctx.strokeStyle = sel ? C().gold : C().dim;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - NAME_BOX_W/2, NAME_LETTER_Y - 22, NAME_BOX_W, 44);
+    centerText(nameEntry.letters[i], NAME_LETTER_Y + 11, 'bold 28px Consolas,monospace', C().text);
+    ctx.fillStyle = sel ? C().gold : C().dim;
+    ctx.beginPath();
+    ctx.moveTo(cx, NAME_DOWN_Y + 7); ctx.lineTo(cx - 8, NAME_DOWN_Y - 7); ctx.lineTo(cx + 8, NAME_DOWN_Y - 7);
+    ctx.closePath(); ctx.fill();
+  }
+  const b = NAME_CONFIRM_BTN;
+  ctx.fillStyle = 'rgba(255,215,94,0.25)';
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  ctx.strokeStyle = C().gold; ctx.lineWidth = 2;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  centerText('確認送出', b.y + b.h/2 + 5, 'bold 14px Consolas,monospace', C().gold);
+}
 const MUTE_BTN = { x: W - 32, y: H - 32, w: 24, h: 24 };
 function drawMuteButton(){
   const { x, y, w, h } = MUTE_BTN;
@@ -1586,8 +1726,20 @@ function drawOver(){
     centerText('★ 新紀錄！', 365, 'bold 16px Consolas,monospace', C().gold);
   else if(!newBestScore)
     centerText('最高分數 ' + bestScore, 365, 'bold 13px Consolas,monospace', C().dim);
-  if(time - overAt > .7 && Math.floor(time * 2) % 2 === 0)
-    centerText('點擊螢幕或按任意鍵再玩一次', 430, 'bold 14px Consolas,monospace', C().text);
+
+  if (showResultBoard){
+    drawMiniLeaderboard(395);
+    if(time - overAt > .7 && Math.floor(time * 2) % 2 === 0)
+      centerText('點擊螢幕或按任意鍵再玩一次', 595, 'bold 12px Consolas,monospace', C().text);
+  } else if (nameEntry === 'submitting'){
+    centerText('上傳中...', 460, 'bold 15px Consolas,monospace', C().dim);
+  } else if (nameEntry){
+    drawNameEntryWidget();
+  } else {
+    if(submitFailedMsg) centerText('全球榜上傳失敗，僅記錄本機成績', 405, 'bold 11px Consolas,monospace', C().dim);
+    if(time - overAt > .7 && Math.floor(time * 2) % 2 === 0)
+      centerText('點擊螢幕或按任意鍵再玩一次', 430, 'bold 14px Consolas,monospace', C().text);
+  }
 }
 function draw(){
   drawWalls();
@@ -1596,7 +1748,12 @@ function draw(){
   if (state === 'play' && currentTheme().id === 'scifi') drawScifiAmbience(1/120);
   if (state === 'play' && currentTheme().id === 'ice') drawIceAmbience(1/120);
   if (state === 'play' && currentTheme().id === 'lava') drawLavaAmbience(1/120);
-  if(state === 'menu'){ drawMenu(); drawMuteButton(); return; }
+  if(state === 'menu'){
+    const view = Math.floor(time / 7) % 2 === 0 ? 'cover' : 'board';
+    if(view === 'cover') drawMenu(); else drawLeaderboard();
+    drawMuteButton();
+    return;
+  }
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
   for(const p of plats) if(p.coin) drawCoin(p);
@@ -1658,6 +1815,7 @@ function inputDir(){
   return Math.max(-1, Math.min(1, d));
 }
 function tryStart(){
+  if(nameEntry) return;
   if(state === 'menu' || (state === 'over' && time - overAt > .7)){
     reset(); state = 'play'; snd.start(); music.play(THEMES[0].id);
   }
@@ -1665,6 +1823,14 @@ function tryStart(){
 addEventListener('keydown', e => {
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
   initAudio();
+  if(nameEntry && nameEntry !== 'submitting'){
+    if(e.key === 'ArrowUp') cycleLetter(1);
+    else if(e.key === 'ArrowDown') cycleLetter(-1);
+    else if(e.key === 'ArrowLeft') moveCol(-1);
+    else if(e.key === 'ArrowRight') moveCol(1);
+    else if(e.key === 'Enter' || e.key === ' ') submitNameEntry();
+    return;
+  }
   if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
   if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
   if(!e.repeat) tryStart();
@@ -1673,18 +1839,33 @@ addEventListener('keyup', e => {
   if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
   if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
 });
-function hitMuteButton(e){
+function toCanvasXY(e){
   const r = cv.getBoundingClientRect();
-  const x = (e.clientX - r.left) * (W / r.width);
-  const y = (e.clientY - r.top) * (H / r.height);
+  return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) };
+}
+function hitMuteButton(e){
+  const { x, y } = toCanvasXY(e);
   const dx = x - (MUTE_BTN.x + MUTE_BTN.w / 2), dy = y - (MUTE_BTN.y + MUTE_BTN.h / 2);
   const rad = MUTE_BTN.w / 2 + 4;
   return dx * dx + dy * dy <= rad * rad;
+}
+function hitNameEntry(e){
+  const { x, y } = toCanvasXY(e);
+  for(let i = 0; i < 3; i++){
+    const cx = nameColX(i);
+    if(Math.abs(x - cx) < NAME_BOX_W/2 + 4){
+      if(Math.abs(y - NAME_UP_Y) < 18){ nameEntry.col = i; cycleLetter(1); return; }
+      if(Math.abs(y - NAME_DOWN_Y) < 18){ nameEntry.col = i; cycleLetter(-1); return; }
+    }
+  }
+  const b = NAME_CONFIRM_BTN;
+  if(x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h){ submitNameEntry(); }
 }
 wrap.addEventListener('pointerdown', e => {
   e.preventDefault();
   initAudio();
   if(hitMuteButton(e)){ music.setEnabled(!music.enabled); return; }
+  if(nameEntry && nameEntry !== 'submitting'){ hitNameEntry(e); return; }
   if(state !== 'play'){ tryStart(); return; }
   touchSides.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right');
 });
@@ -1713,6 +1894,7 @@ function frame(now){
 reset();
 state = 'menu';
 music.play('menu');
+fetchGlobalScores();
 requestAnimationFrame(frame);
 </script>
 </html>

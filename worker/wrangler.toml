@@ -1,0 +1,8 @@
+name = "underground-adventure-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "underground-adventure-scores"
+database_id = "a25747cb-5552-4d83-9bbd-110c738af7b6"
