@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "mike-underground-adventure",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
