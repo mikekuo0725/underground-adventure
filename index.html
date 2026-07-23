@@ -291,11 +291,14 @@ let altarSpawned = false, hasWon = false, winT = 0, victory = false;
 try { best = +(localStorage.getItem('downstairs-best') || 0) || 0; } catch(e){}
 try { bestScore = +(localStorage.getItem('downstairs-best-score') || 0) || 0; } catch(e){}
 
-// ---- 音效（WebAudio 小方波，不需外部檔案）----
+// ---- 音效與音樂（WebAudio 合成，不需外部檔案）----
 let AC = null;
+let musicEnabled = true;
+try{ const m = localStorage.getItem('downstairs-music'); if(m !== null) musicEnabled = m === '1'; }catch(e){}
 function initAudio(){
   if(!AC){ try{ AC = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
   if(AC && AC.state === 'suspended') AC.resume();
+  music.ensureStarted();
 }
 function tone(f0, f1, dur, type, vol){
   if(!AC) return;
@@ -311,14 +314,121 @@ function tone(f0, f1, dur, type, vol){
     o.start(t); o.stop(t + dur);
   }catch(e){}
 }
+function chime(freqs, dur, type, vol){
+  if(!AC) return;
+  try{
+    const t = AC.currentTime;
+    freqs.forEach((f, i) => {
+      const t0 = t + i * dur * 0.9;
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t0);
+      g.gain.setValueAtTime(vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t0); o.stop(t0 + dur);
+    });
+  }catch(e){}
+}
 const snd = {
   land(){ tone(180, 140, .06, 'square',   .10); },
   heal(){ tone(520, 780, .08, 'square',   .07); },
+  coin(big){ chime(big ? [660, 990, 1320] : [740, 1180], .09, 'square', .09); },
   spring(){ tone(300, 720, .18, 'square', .14); },
   hurt(){ tone(320, 110, .22, 'sawtooth', .18); },
   over(){ tone(380, 70,  .70, 'sawtooth', .20); },
-  start(){ tone(440, 880, .15, 'square',  .13); }
+  start(){ tone(440, 880, .15, 'square',  .13); },
+  win(){ chime([523, 659, 784, 1047], .16, 'square', .13); }
 };
+
+// ---- 背景音樂（音格音序器，五關各配一段旋律＋選單旋律，皆為即時合成）----
+function noteFreq(m){ return m ? 440 * Math.pow(2, (m - 69) / 12) : 0; }
+const TRACKS = {
+  menu: {
+    stepDur: 0.20, bassEvery: 4, lead: 'triangle', bass: 'sine', vol: 0.075, bassVol: 0.06,
+    melody:    [72,76,79,76, 81,79,77,0,  72,74,76,0,  79,77,74,0],
+    bassNotes: [48,53,55,48]
+  },
+  city: {
+    stepDur: 0.15, bassEvery: 4, lead: 'square', bass: 'triangle', vol: 0.07, bassVol: 0.055,
+    melody:    [72,76,79,84, 79,76,74,72, 74,77,81,86, 81,77,76,74],
+    bassNotes: [48,53,45,50]
+  },
+  jungle: {
+    stepDur: 0.22, bassEvery: 4, lead: 'sine', bass: 'triangle', vol: 0.075, bassVol: 0.06,
+    melody:    [69,0,67,0, 64,0,67,69, 72,0,69,0, 64,62,0,0],
+    bassNotes: [45,43,48,40]
+  },
+  scifi: {
+    stepDur: 0.12, bassEvery: 2, lead: 'square', bass: 'sawtooth', vol: 0.065, bassVol: 0.05,
+    melody:    [64,67,71,67, 64,67,71,74, 76,74,71,67, 64,66,67,71],
+    bassNotes: [40,40,38,38, 40,40,35,35]
+  },
+  ice: {
+    stepDur: 0.20, bassEvery: 4, lead: 'triangle', bass: 'sine', vol: 0.07, bassVol: 0.05,
+    melody:    [74,0,81,0, 77,0,84,0, 74,0,79,0, 77,81,0,0],
+    bassNotes: [38,43,38,41]
+  },
+  lava: {
+    stepDur: 0.11, bassEvery: 2, lead: 'sawtooth', bass: 'square', vol: 0.06, bassVol: 0.05,
+    melody:    [64,65,67,65, 64,65,67,69, 71,69,67,65, 64,67,65,64],
+    bassNotes: [40,41,40,41, 38,40,36,38]
+  }
+};
+const music = (() => {
+  let playing = null, timer = null, stepIdx = 0, nextTime = 0;
+  const lookahead = 25, scheduleAhead = 0.15;
+  function playNote(freq, type, dur, t0, vol){
+    if(!freq) return;
+    try{
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t0); o.stop(t0 + dur);
+    }catch(e){}
+  }
+  function scheduler(){
+    const track = TRACKS[playing];
+    if(!track) return;
+    while(nextTime < AC.currentTime + scheduleAhead){
+      const note = track.melody[stepIdx % track.melody.length];
+      playNote(noteFreq(note), track.lead, track.stepDur * 0.94, nextTime, track.vol);
+      if(stepIdx % track.bassEvery === 0){
+        const bassNote = track.bassNotes[Math.floor(stepIdx / track.bassEvery) % track.bassNotes.length];
+        playNote(noteFreq(bassNote), track.bass, track.stepDur * track.bassEvery * 0.85, nextTime, track.bassVol);
+      }
+      nextTime += track.stepDur;
+      stepIdx++;
+    }
+  }
+  function startScheduler(){
+    stepIdx = 0;
+    nextTime = AC.currentTime + 0.05;
+    timer = setInterval(scheduler, lookahead);
+  }
+  function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+  function play(id){
+    if(playing === id && timer) return;
+    playing = id;
+    stop();
+    if(!musicEnabled || !AC) return;
+    startScheduler();
+  }
+  function setEnabled(v){
+    musicEnabled = v;
+    try{ localStorage.setItem('downstairs-music', v ? '1' : '0'); }catch(e){}
+    if(!v) stop();
+    else if(playing && AC) startScheduler();
+  }
+  function ensureStarted(){
+    if(musicEnabled && playing && !timer && AC) startScheduler();
+  }
+  return { play, stop, setEnabled, ensureStarted, get enabled(){ return musicEnabled; } };
+})();
 
 // ---- 角色像素圖（字元對應顏色，'.' 透明，23x30 已是遊戲內實際顯示尺寸，對應碰撞盒 PW/PH）----
 const COMMON_PAL = { f:'#f0c8a0', F:'#d4a87e', e:'#1d1610', x:'#ffffff', w:'#8a3c28' };
@@ -537,6 +647,7 @@ function gameOver(){
     try{ localStorage.setItem('downstairs-best-score', String(bestScore)); }catch(e){}
   }
   snd.over();
+  music.stop();
 }
 function finishWin(){
   victory = true;
@@ -552,7 +663,8 @@ function finishWin(){
     bestScore = score; newBestScore = true;
     try{ localStorage.setItem('downstairs-best-score', String(bestScore)); }catch(e){}
   }
-  snd.start();
+  snd.win();
+  music.stop();
 }
 
 // ---- 更新 ----
@@ -575,6 +687,7 @@ function update(dt){
     lastThemeIndex = themeIdx;
     bannerT = 2.5;
     snd.start();
+    music.play(THEMES[themeIdx].id);
   }
   if (bannerT > 0) bannerT -= dt;
 
@@ -726,8 +839,8 @@ function update(dt){
     if (player.x < cx + r && player.x + PW > cx - r && player.y < cy + r && player.y + PH > cy - r){
       score += p.coin === 'big' ? 500 : 100;
       coinsCollected++;
+      snd.coin(p.coin === 'big');
       p.coin = null;
-      snd.heal(); // 暫用既有音效,音效章節另外設計時再換專屬音色
     }
   }
 
@@ -1433,6 +1546,30 @@ function drawMenu(){
   if(Math.floor(time * 2) % 2 === 0)
     centerText('點擊螢幕或按任意鍵開始', 570, 'bold 15px Consolas,monospace', C().text);
 }
+const MUTE_BTN = { x: W - 32, y: H - 32, w: 24, h: 24 };
+function drawMuteButton(){
+  const { x, y, w, h } = MUTE_BTN;
+  const cx = x + w / 2, cy = y + h / 2;
+  ctx.fillStyle = 'rgba(10,8,16,0.55)';
+  ctx.beginPath(); ctx.arc(cx, cy, w / 2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C().text;
+  ctx.strokeStyle = C().text;
+  ctx.lineWidth = 1.5;
+  const sx = cx - 5;
+  ctx.beginPath();
+  ctx.moveTo(sx - 6, cy - 4); ctx.lineTo(sx - 2, cy - 4); ctx.lineTo(sx + 3, cy - 8);
+  ctx.lineTo(sx + 3, cy + 8); ctx.lineTo(sx - 2, cy + 4); ctx.lineTo(sx - 6, cy + 4);
+  ctx.closePath(); ctx.fill();
+  if (music.enabled){
+    ctx.beginPath(); ctx.arc(sx + 6, cy, 4, -0.7, 0.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(sx + 6, cy, 7, -0.8, 0.8); ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(sx + 3, cy - 6); ctx.lineTo(sx + 11, cy + 6);
+    ctx.moveTo(sx + 11, cy - 6); ctx.lineTo(sx + 3, cy + 6);
+    ctx.stroke();
+  }
+}
 function drawOver(){
   ctx.fillStyle = 'rgba(10,8,16,.74)';
   ctx.fillRect(0, 0, W, H);
@@ -1459,7 +1596,7 @@ function draw(){
   if (state === 'play' && currentTheme().id === 'scifi') drawScifiAmbience(1/120);
   if (state === 'play' && currentTheme().id === 'ice') drawIceAmbience(1/120);
   if (state === 'play' && currentTheme().id === 'lava') drawLavaAmbience(1/120);
-  if(state === 'menu'){ drawMenu(); return; }
+  if(state === 'menu'){ drawMenu(); drawMuteButton(); return; }
   for(const p of plats) drawPlat(p);
   for(const p of plats) if(p.heart) drawHeart(p);
   for(const p of plats) if(p.coin) drawCoin(p);
@@ -1479,6 +1616,7 @@ function draw(){
   }
   if (hasWon && state === 'play') drawWinCelebration();
   if(state === 'over') drawOver();
+  drawMuteButton();
 }
 function drawWinCelebration(){
   ctx.fillStyle = 'rgba(20,10,6,0.5)';
@@ -1521,7 +1659,7 @@ function inputDir(){
 }
 function tryStart(){
   if(state === 'menu' || (state === 'over' && time - overAt > .7)){
-    reset(); state = 'play'; snd.start();
+    reset(); state = 'play'; snd.start(); music.play(THEMES[0].id);
   }
 }
 addEventListener('keydown', e => {
@@ -1535,9 +1673,18 @@ addEventListener('keyup', e => {
   if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
   if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
 });
+function hitMuteButton(e){
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (W / r.width);
+  const y = (e.clientY - r.top) * (H / r.height);
+  const dx = x - (MUTE_BTN.x + MUTE_BTN.w / 2), dy = y - (MUTE_BTN.y + MUTE_BTN.h / 2);
+  const rad = MUTE_BTN.w / 2 + 4;
+  return dx * dx + dy * dy <= rad * rad;
+}
 wrap.addEventListener('pointerdown', e => {
   e.preventDefault();
   initAudio();
+  if(hitMuteButton(e)){ music.setEnabled(!music.enabled); return; }
   if(state !== 'play'){ tryStart(); return; }
   touchSides.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right');
 });
@@ -1565,6 +1712,7 @@ function frame(now){
 }
 reset();
 state = 'menu';
+music.play('menu');
 requestAnimationFrame(frame);
 </script>
 </html>
